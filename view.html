@@ -1,0 +1,17 @@
+{% extends "base-home.html" %}
+{% load markup %}
+
+{% block title %}{{title}} - EQL Knowledge{% endblock %}
+
+{% block main %}
+    <h2>{{title}}</h2>
+    <p class="post-info">Last changed <a href="#">sometime</a> |
+    Filed under
+    {% for tag in tags %}
+        <a href="{{tag}}">{{tag}}</a>{% if forloop.last %}.{% else %},{% endif %}
+    {% endfor %}
+    
+    {% filter markdown %}
+        {{ text }}
+    {% endfilter %}
+{% endblock %}
