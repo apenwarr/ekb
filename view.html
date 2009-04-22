@@ -5,12 +5,16 @@
 
 {% block main %}
     <h2>{{title}}</h2>
-    <p class="post-info">Last changed <a href="#">sometime</a> |
-    Filed under
-    {% for tag in tags %}
-        <a href="{{tag}}">{{tag}}</a>{% if forloop.last %}.{% else %},{% endif %}
-    {% endfor %}
-    
+    <p class="post-info">Last changed <a href="#">{{when}}</a>
+
+    {% if tags %}
+        | Filed under
+	{% for tag in tags %}
+            <a href="{{tag}}">{{tag}}</a
+	    >{% if forloop.last %}.{% else %},{% endif %}
+	{% endfor %}
+    {% endif %}
+ 
     {% filter markdown %}
         {{ text }}
     {% endfilter %}
