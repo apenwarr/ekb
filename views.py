@@ -9,6 +9,7 @@ dict = {'menuitems': [('/index/', 'Home'),
 	};
 
 def show(req, search=''):
+    search = req.REQUEST.get('q', search)
     dict['page'] = '/kb/'
     dict['title'] = 'Search: "%s"' % search
     dict['tags'] = ['this','that','the other thing']
