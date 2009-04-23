@@ -37,20 +37,27 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
+_includes_in_progress = {}
 def _try_include(match):
     refname = match.group(1)
-    print 'try_include: {{%s}}' % str(refname)
     d = _try_get(Doc.objects, filename=str(refname))
-    if d:
-	return d.text
-    return '[[include:%s]]' % refname
+    if d and refname not in _includes_in_progress:
+	_includes_in_progress[refname] = 1
+	t = _process_includes(d.text)
+	del _includes_in_progress[refname]
+	return t
+    else:
+	return '[[failed-include:%s]]' % refname
 
-def _do_markdown(text):
+def _process_includes(text):
     # handle "include" references.  These are our own creation, of the
     # form: [[include:refname]]
     # We just replace that text with the verbatim contents of the referred
     # document.
-    text = re.sub(r'\[\[include:([^]]*)\]\]', _try_include, text)
+    return re.sub(r'\[\[include:([^]]*)\]\]', _try_include, text)
+
+def _do_markdown(text):
+    text = _process_includes(text)
     
     # find all markdown 'refs' that refer to kb pages.
     # Markdown refs are of the form: [Description String] [refname]
