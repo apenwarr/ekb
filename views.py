@@ -125,7 +125,7 @@ def show(req, search = None):
 
 	if tag:
 	    # the search term is actually the name of a tag
-	    f = tag.doc_set.all()
+	    f = tag.doc_set.order_by('title')
 	    dict['skip_tags'] = 1
 	    dict['title'] = 'Category: %s' % tag.name
 	    dict['search'] = ''
