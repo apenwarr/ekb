@@ -4,15 +4,19 @@
 {% block title %}{{title}} - EQL Search{% endblock %}
 
 {% block main %}
-    <h2>{{title}}</h2>
-
-    <table class='pretty'>
-    <tr><th></th><th>Title</th></tr>
+    <h1>{{title}}</h1>
+    
+    <dl>
     {% for doc in docs %}
-        <tr>
-	<td><a href="/kb/{{doc.id}}{{urlappend}}">{{doc.id}}</a></td>
-	<td>{{doc.title}}</td>
-	</tr>
+	<dt><a href="/kb/{{doc.id}}{{urlappend}}">{{doc.title}}</a></dt>
+	<dd>{% autoescape off %}{{doc.autosummary}}{% endautoescape %}
+	{% if doc.tags.count %}
+	    <br><b>Categories:
+	    {% for tag in doc.tags.all %}
+	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a>
+	    {% endfor %}</b>
+	{% endif %}
+	</dd>
     {% endfor %}
-    </table>
+    </dl>
 {% endblock %}

@@ -8,7 +8,33 @@ def _try_get(queryset, **kwargs):
 	return i
     return None
 
-_default_highlighter = HtmlHighlighter('', 'strong')
+def _autosummary(text, want_words, highlighter, width = 160):
+    text = " " + text + " "
+    match = matchend = -1
+    for w in want_words:
+	match = text.lower().find(w.lower())
+	if match >= 0:
+	    matchend = match + len(w)
+	    break
+    if match < 0:
+	match = 0
+
+    start = max(text[:match].rfind(".") + 1,
+		text[:match].rfind("!") + 1)
+    if matchend-start >= width:
+	start = matchend-width/2
+
+    while start < len(text) and not text[start].isspace():
+	start += 1
+    end = start + width
+    if end >= len(text):
+	end = len(text)-1
+    while end >= 0 and not text[end].isalnum():
+	end -= 1
+    while end < len(text) and text[end].isalnum():
+	end += 1
+
+    return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
 def show(req, search = None):
     qsearch = req.REQUEST.get('q')
@@ -28,10 +54,9 @@ def show(req, search = None):
 	page = '/kb/%d' % doc.id
 	dict['page'] = page
 	dict['search'] = qsearch
-	h = _default_highlighter
+	h = HtmlHighlighter(qsearch.split(), 'strong')
 	if qsearch:
 	    dict['menuitems'].append(('/kb/%s' % qsearch, '"%s"' % qsearch))
-	    h = HtmlHighlighter(qsearch.split(), 'strong')
 	dict['menuitems'].append((page, 'Article #%d' % doc.id))
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
@@ -45,6 +70,7 @@ def show(req, search = None):
 	dict['page'] = page
 	if search:
 	    dict['menuitems'].append((page, 'Search'))
+	h = HtmlHighlighter(search.split(), 'strong')
 	dict['search'] = search
 	if search:
 	    dict['urlappend'] = '?q=%s' % search
@@ -58,6 +84,11 @@ def show(req, search = None):
 	    for word in search.split():
 		f = f & (Doc.objects.filter(title__icontains = word) |
 			 Doc.objects.filter(text__icontains = word))
-	dict['docs'] = f
+
+	want_words = search.split()
+	dict['docs'] = []
+	for d in f:
+	    d.autosummary = _autosummary(d.text, want_words, h)
+	    dict['docs'].append(d)
 		
 	return render_to_response('kb/search.html', dict)
