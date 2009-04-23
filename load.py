@@ -20,8 +20,5 @@ def load_all(path):
 		    text = open(fullpath).read())
 	    d.save()
 	    for tname in tags:
-		t = Tag.objects.get(name=tname)
-		if not t:
-		    t = Tag(name=tname)
-		    t.save()
+		(t, created) = Tag.objects.get_or_create(name=tname)
 		d.tags.add(t)

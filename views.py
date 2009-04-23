@@ -8,12 +8,10 @@ _dict = {'menuitems': [('/index/', 'Home'),
 		      ],
 	};
 
-def _render_search(dict, req, search):
-    dict['title'] = 'Search: "%s"' % search
-    dict['when'] = '5 days ago'
-    dict['tags'] = ['this','that','the other thing']
-    dict['text'] = "Hey, I'm some text!"
-    return render_to_response('kb/view.html', dict)
+def _try_get(queryset, **kwargs):
+    for i in queryset.filter(**kwargs):
+	return i
+    return None
 
 def show(req, search=''):
     search = req.REQUEST.get('q', search)
@@ -22,13 +20,18 @@ def show(req, search=''):
     dict.update(_dict)
     dict['page'] = '/kb/'
 
-    try:
-	doc = Doc.objects.get(id=atoi(search))
-    except KeyError:
-	return _render_search(dict, req, search)
+    doc = _try_get(Doc.objects, id=atoi(search))
+    if doc:
+	dict['title'] = doc.title
+	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
+	dict['tags'] = [tag.name for tag in doc.tags.all()]
+	dict['text'] = doc.text
+	return render_to_response('kb/view.html', dict)
+    else:
+	dict['title'] = 'Search: "%s"' % search
+	dict['when'] = '5 days ago'
+	dict['tags'] = ['this','that','the other thing']
+	dict['text'] = "Hey, I'm some text!"
+	dict['search'] = search
+	return render_to_response('kb/view.html', dict)
 
-    dict['title'] = doc.title
-    dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
-    dict['tags'] = [tag.name for tag in doc.tags.all()]
-    dict['text'] = doc.text
-    return render_to_response('kb/view.html', dict)

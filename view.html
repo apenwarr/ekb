@@ -14,8 +14,6 @@
 	    >{% if forloop.last %}.{% else %},{% endif %}
 	{% endfor %}
     {% endif %}
- 
-    {% filter markdown %}
-        {{ text }}
-    {% endfilter %}
+
+    {{ text|markdown }}
 {% endblock %}
