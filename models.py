@@ -8,4 +8,3 @@ class Doc(models.Model):
     last_modified = models.DateTimeField()
     tags = models.ManyToManyField(Tag)
     text = models.TextField()
-

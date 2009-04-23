@@ -1,0 +1,18 @@
+{% extends "base-home.html" %}
+{% load markup %}
+
+{% block title %}{{title}} - EQL Search{% endblock %}
+
+{% block main %}
+    <h2>{{title}}</h2>
+
+    <table class='pretty'>
+    <tr><th></th><th>Title</th></tr>
+    {% for doc in docs %}
+        <tr>
+	<td><a href="/kb/{{doc.id}}{{urlappend}}">{{doc.id}}</a></td>
+	<td>{{doc.title}}</td>
+	</tr>
+    {% endfor %}
+    </table>
+{% endblock %}
