@@ -58,7 +58,7 @@ def _try_include(match):
     else:
 	return '[[missing-include:%s]]' % refname
 
-def _process_includes(text):
+def _process_includes(text, depth=1):
     # handle "include" references.  These are our own creation, of the
     # form: [[include:refname]]
     # We just replace that text with the verbatim contents of the referred
@@ -68,11 +68,11 @@ def _process_includes(text):
     # normalize the headers: the toplevel header should be h1, no matter
     # what it is in the document itself.
     allheaders = re.findall(re.compile('^(#+)', re.M), t)
-    minheader = min([len(h) for h in allheaders])
-    return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#', t)
+    minheader = min([99] + [len(h) for h in allheaders])
+    return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
 def _do_markdown(text):
-    text = _process_includes(text)
+    text = _process_includes(text, depth=3)
     
     # find all markdown 'refs' that refer to kb pages.
     # Markdown refs are of the form: [Description String] [refname]
