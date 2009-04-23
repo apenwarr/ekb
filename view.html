@@ -1,4 +1,4 @@
-{% extends "base-home.html" %}
+{% extends "kb.html" %}
 {% load markup %}
 
 {% block title %}{{title}} - EQL Knowledge{% endblock %}
@@ -10,7 +10,7 @@
     {% if tags %}
         | Filed under
 	{% for tag in tags %}
-            <a href="{{tag}}">{{tag}}</a
+            <a href="{{tag.name}}">{{tag.name}}</a
 	    >{% if forloop.last %}.{% else %},{% endif %}
 	{% endfor %}
     {% endif %}
