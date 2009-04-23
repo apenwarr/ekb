@@ -1,4 +1,5 @@
 from django.shortcuts import render_to_response
+from django.http import HttpResponsePermanentRedirect
 import re, datetime, markdown
 from helpers import *
 from kb.models import Doc, Tag
@@ -65,7 +66,10 @@ def show(req, search = None):
 	
     if doc:
 	# View the specific article they requested.
-	page = '/kb/%d%s' % (doc.id, dict.get('urlappend', ''))
+	pagebase = '/kb/%d/%s' % (doc.id, doc.filename)
+	page = pagebase + dict.get('urlappend', '')
+	if req.path != pagebase:
+	    return HttpResponsePermanentRedirect(page)
 	dict['page'] = page
 	dict['menuitems'].append((page, 'Article #%d' % doc.id))
 	dict['title'] = doc.title

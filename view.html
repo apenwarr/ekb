@@ -5,12 +5,12 @@
 
 {% block main %}
     <h2>{{title}}</h2>
-    <p class="post-info">Last changed <a href="#">{{when}}</a>
+    <p class="post-info">Last changed <b>{{when}}</b>
 
     {% if tags %}
         | Filed under
 	{% for tag in tags %}
-            <a href="{{tag.name}}">{{tag.name}}</a
+            <a href="/kb/{{tag.name}}">{{tag.name}}</a
 	    >{% if forloop.last %}.{% else %},{% endif %}
 	{% endfor %}
     {% endif %}

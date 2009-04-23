@@ -10,14 +10,17 @@
     
     <dl>
     {% for doc in docs %}
-	<dt><a href="/kb/{{doc.id}}{{urlappend}}">{{doc.title}}</a></dt>
-	<dd>{% autoescape off %}{{doc.autosummary}}{% endautoescape %}
-	{% if doc.tags.count and not skip_tags %}
+	<dt>
+	  <a href="/kb/{{doc.id}}/{{doc.filename}}{{urlappend}}">{{doc.title}}</a>
+	</dt>
+	<dd>
+	  {% autoescape off %}{{doc.autosummary}}{% endautoescape %}
+	  {% if doc.tags.count and not skip_tags %}
 	    <br><b>Categories:
 	    {% for tag in doc.tags.all %}
 	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a>
 	    {% endfor %}</b>
-	{% endif %}
+	  {% endif %}
 	</dd>
     {% endfor %}
     </dl>
