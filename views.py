@@ -39,22 +39,37 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
 _includes_in_progress = {}
 def _try_include(match):
-    refname = match.group(1)
+    indent = match.group(2)
+    indent = indent and int(indent) or 0
+    refname = match.group(3)
     d = _try_get(Doc.objects, filename=str(refname))
-    if d and refname not in _includes_in_progress:
+    if refname in _includes_in_progress:
+	return '[[aborted-recursive-include:%s]]' % refname
+    elif d:
 	_includes_in_progress[refname] = 1
 	t = _process_includes(d.text)
+
+	# handle the specified indent: make all headers in the included
+	# document 'indent' levels deeper than they were before.
+	t = re.sub(re.compile(r'^#', re.M), '#'*(indent+1), t)
+	
 	del _includes_in_progress[refname]
 	return t
     else:
-	return '[[failed-include:%s]]' % refname
+	return '[[missing-include:%s]]' % refname
 
 def _process_includes(text):
     # handle "include" references.  These are our own creation, of the
     # form: [[include:refname]]
     # We just replace that text with the verbatim contents of the referred
     # document.
-    return re.sub(r'\[\[include:([^]]*)\]\]', _try_include, text)
+    t = re.sub(r'\[\[include(\+(\d+))?:([^]]*)\]\]', _try_include, text)
+
+    # normalize the headers: the toplevel header should be h1, no matter
+    # what it is in the document itself.
+    allheaders = re.findall(re.compile('^(#+)', re.M), t)
+    minheader = min([len(h) for h in allheaders])
+    return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#', t)
 
 def _do_markdown(text):
     text = _process_includes(text)
