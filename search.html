@@ -6,11 +6,13 @@
 {% block main %}
     <h1>{{title}}</h1>
     
+    {% if message %}<p>{{message}}</p>{% endif %}
+    
     <dl>
     {% for doc in docs %}
 	<dt><a href="/kb/{{doc.id}}{{urlappend}}">{{doc.title}}</a></dt>
 	<dd>{% autoescape off %}{{doc.autosummary}}{% endautoescape %}
-	{% if doc.tags.count %}
+	{% if doc.tags.count and not skip_tags %}
 	    <br><b>Categories:
 	    {% for tag in doc.tags.all %}
 	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a>

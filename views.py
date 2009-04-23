@@ -8,7 +8,7 @@ def _try_get(queryset, **kwargs):
 	return i
     return None
 
-def _autosummary(text, want_words, highlighter, width = 160):
+def _autosummary(text, want_words, highlighter, width = 120):
     text = " " + text + " "
     match = matchend = -1
     for w in want_words:
@@ -37,26 +37,36 @@ def _autosummary(text, want_words, highlighter, width = 160):
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
 def show(req, search = None):
-    qsearch = req.REQUEST.get('q')
+    qsearch = req.REQUEST.get('q', '')
     if not search:
 	search = qsearch
 
     dict = {}
+    dict['alltags'] = Tag.objects
+    dict['alldocs'] = Doc.objects
     dict['menuitems'] = [('/index/', 'Home'),
 			 ('/kb/', 'Knowledgebase')]
 
-    dict['alltags'] = Tag.objects.all()
-    dict['alldocs'] = Doc.objects.all()
-    
     doc = _try_get(Doc.objects, id=atoi(search))
+    if doc: search = qsearch  # the old search was really a docid
+    tag = _try_get(Tag.objects, name__iexact=search)
+
+    dict['search'] = search
+    if search:
+	dict['urlappend'] = '?q=%s' % search
+    want_words = search.split()
+    h = HtmlHighlighter(want_words, 'strong')
+
+    if search:
+	if tag:
+	    dict['menuitems'].append(('/kb/%s' % search, tag.name))
+	else:
+	    dict['menuitems'].append(('/kb/%s' % search, '"%s"' % search))
+	
     if doc:
-	print req.path
-	page = '/kb/%d' % doc.id
+	# View the specific article they requested.
+	page = '/kb/%d%s' % (doc.id, dict.get('urlappend', ''))
 	dict['page'] = page
-	dict['search'] = qsearch
-	h = HtmlHighlighter(qsearch.split(), 'strong')
-	if qsearch:
-	    dict['menuitems'].append(('/kb/%s' % qsearch, '"%s"' % qsearch))
 	dict['menuitems'].append((page, 'Article #%d' % doc.id))
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
@@ -64,28 +74,28 @@ def show(req, search = None):
 	dict['text'] = h.highlight(doc.text, markdown.markdown)
 	return render_to_response('kb/view.html', dict)
     else:
-	if not search:
-	    search = ''
+	# Search for matching articles
 	page = '/kb/%s' % search
 	dict['page'] = page
-	if search:
-	    dict['menuitems'].append((page, 'Search'))
-	h = HtmlHighlighter(search.split(), 'strong')
-	dict['search'] = search
-	if search:
-	    dict['urlappend'] = '?q=%s' % search
-	dict['title'] = 'Search: "%s"' % search
 
-	tag = _try_get(Tag.objects, name__iexact=search)
 	if tag:
+	    # the search term is actually the name of a tag
 	    f = tag.doc_set.all()
-	else:
+	    dict['skip_tags'] = 1
+	    dict['title'] = 'Category: %s' % tag.name
+	elif search:
+	    # the search term is just a search term
+	    dict['title'] = 'Search: "%s"' % search
 	    f = Doc.objects.all()
-	    for word in search.split():
+	    for word in want_words:
 		f = f & (Doc.objects.filter(title__icontains = word) |
 			 Doc.objects.filter(text__icontains = word))
+	else:
+	    # there is no search term; toplevel index
+	    dict['title'] = 'Knowledgebase'
+	    dict['message'] = 'Please choose a category or enter a search term.'
+	    f = []
 
-	want_words = search.split()
 	dict['docs'] = []
 	for d in f:
 	    d.autosummary = _autosummary(d.text, want_words, h)

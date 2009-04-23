@@ -6,7 +6,7 @@
 	<li><a href="/kb/">-All-
 	    <br><span>{{alldocs.count}} 
 	      article{{alldocs.count|pluralize}}</span></a></li>
-        {% for tag in alltags %}
+        {% for tag in alltags.all %}
             <li><a href="/kb/{{tag.name}}">{{tag.name}}
 	       <br><span>{{tag.doc_set.count}}
 	        article{{tag.doc_set.count|pluralize}}</span></a></li>
