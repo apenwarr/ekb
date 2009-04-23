@@ -87,6 +87,10 @@ def _do_markdown(text):
 
     return markdown.Markdown(str(text)).toString()
 
+def get_dochtml(filename):
+    doc = _try_get(Doc.objects, filename=filename)
+    return _do_markdown(doc.text)
+
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
     if not search:
