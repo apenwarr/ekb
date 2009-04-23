@@ -18,7 +18,8 @@
 	  {% if doc.tags.count and not skip_tags %}
 	    <br><b>Categories:
 	    {% for tag in doc.tags.all %}
-	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a>
+	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a
+	    >{% if not forloop.last %},{% endif %}
 	    {% endfor %}</b>
 	  {% endif %}
 	</dd>
@@ -27,4 +28,7 @@
         <dd>No matches.</dd>
     {% endif %}
     </dl>
+{% endblock %}
+
+{% block post_search %}
 {% endblock %}

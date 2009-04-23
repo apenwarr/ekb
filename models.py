@@ -9,3 +9,6 @@ class Doc(models.Model):
     last_modified = models.DateTimeField()
     tags = models.ManyToManyField(Tag)
     text = models.TextField()
+
+    def get_url(self):
+	return "/kb/%d/%s" % (self.id, self.filename)

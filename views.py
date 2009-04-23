@@ -10,7 +10,7 @@ def _try_get(queryset, **kwargs):
     return None
 
 def _autosummary(text, want_words, highlighter, width = 120):
-    text = " " + text + " "
+    text = " " + re.sub('#+', '', text) + " "
     match = matchend = -1
     for w in want_words:
 	match = text.lower().find(w.lower())

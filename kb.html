@@ -10,6 +10,7 @@
 	{% endcomment %}
         {% for tag in alltags.all %}
             <li><a href="/kb/{{tag.name}}">{{tag.name}} ({{tag.doc_set.count}})
+	      </a></li>
 	{% endfor %}
     </ul>
 {% endblock %}
@@ -32,6 +33,7 @@
 	</p>
     </form>
     
+    {% block post_search %}
     <script type="text/javascript">
     if (document.getElementById) 
         c = document.getElementById('kbsearchbox');
@@ -39,5 +41,5 @@
         c = document.all['kbsearchbox'];
     c.focus();
     </script>
-    
+    {% endblock %}
 {% endblock %}
