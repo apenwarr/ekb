@@ -1,5 +1,5 @@
 from django.shortcuts import render_to_response
-import re, datetime
+import re, datetime, markdown
 from helpers import *
 from kb.models import Doc, Tag
 
@@ -7,6 +7,8 @@ def _try_get(queryset, **kwargs):
     for i in queryset.filter(**kwargs):
 	return i
     return None
+
+_default_highlighter = HtmlHighlighter('', 'strong')
 
 def show(req, search = None):
     qsearch = req.REQUEST.get('q')
@@ -26,13 +28,15 @@ def show(req, search = None):
 	page = '/kb/%d' % doc.id
 	dict['page'] = page
 	dict['search'] = qsearch
+	h = _default_highlighter
 	if qsearch:
 	    dict['menuitems'].append(('/kb/%s' % qsearch, '"%s"' % qsearch))
+	    h = HtmlHighlighter(qsearch.split(), 'strong')
 	dict['menuitems'].append((page, 'Article #%d' % doc.id))
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
-	dict['text'] = doc.text
+	dict['text'] = h.highlight(doc.text, markdown.markdown)
 	return render_to_response('kb/view.html', dict)
     else:
 	if not search:

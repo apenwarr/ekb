@@ -14,6 +14,7 @@
 	    >{% if forloop.last %}.{% else %},{% endif %}
 	{% endfor %}
     {% endif %}
+    </p>
 
-    {{ text|markdown }}
+    {% autoescape off %}{{ text }}{% endautoescape %}
 {% endblock %}
