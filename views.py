@@ -42,7 +42,11 @@ def show(req, search = None):
 	if search:
 	    dict['urlappend'] = '?q=%s' % search
 	dict['title'] = 'Search: "%s"' % search
-	dict['docs'] = (Doc.objects.filter(title__icontains = search) |
-			Doc.objects.filter(text__icontains = search))
+
+	f = Doc.objects.all()
+	for word in search.split():
+	    f = f & (Doc.objects.filter(title__icontains = word) |
+		     Doc.objects.filter(text__icontains = word))
+	dict['docs'] = f
 		
 	return render_to_response('kb/search.html', dict)
