@@ -42,7 +42,7 @@ def show(req, search = None):
 	search = qsearch
 
     dict = {}
-    dict['alltags'] = Tag.objects
+    dict['alltags'] = Tag.objects.order_by('name')
     dict['alldocs'] = Doc.objects
     dict['menuitems'] = [('/index/', 'Home'),
 			 ('/kb/', 'Knowledgebase')]
