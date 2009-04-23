@@ -37,6 +37,19 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
+def _do_markdown(text):
+    # find all markdown 'refs' that refer to kb pages.
+    # Markdown refs are of the form: [Description String] [refname]
+    # And we need to add a line like:
+    #   [refname]: /the/path
+    # to the bottom in order to make the ref resolvable.
+    refs = re.findall(r'\[[^]]*\]\s*\[([^]]*)\]', text)
+    for ref in refs:
+	d = _try_get(Doc.objects, filename=ref)
+	if d:
+	    text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
+    return markdown.Markdown(str(text)).toString()
+
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
     if not search:
@@ -79,7 +92,7 @@ def show(req, search = None):
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
-	dict['text'] = h.highlight(doc.text, markdown.markdown)
+	dict['text'] = h.highlight(doc.text, _do_markdown)
 	if tag:
 	    dict['search'] = ''
 	return render_to_response('kb/view.html', dict)
