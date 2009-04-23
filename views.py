@@ -52,7 +52,6 @@ def show(req, search = None):
     if doc: search = qsearch  # the old search was really a docid
     tag = _try_get(Tag.objects, name__iexact=search)
 
-    dict['search'] = search
     if search:
 	dict['urlappend'] = '?q=%s' % search
     want_words = search.split()
@@ -63,6 +62,8 @@ def show(req, search = None):
 	    dict['menuitems'].append(('/kb/%s' % search, tag.name))
 	else:
 	    dict['menuitems'].append(('/kb/%s' % search, '"%s"' % search))
+
+    dict['search'] = search
 	
     if doc:
 	# View the specific article they requested.
@@ -71,11 +72,16 @@ def show(req, search = None):
 	if req.path != pagebase:
 	    return HttpResponsePermanentRedirect(page)
 	dict['page'] = page
+	if not tag and not search and len(doc.tags.all()) > 0:
+	    t = doc.tags.all()[0]
+	    dict['menuitems'].append(('/kb/%s' % t.name, t.name))
 	dict['menuitems'].append((page, 'Article #%d' % doc.id))
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
 	dict['text'] = h.highlight(doc.text, markdown.markdown)
+	if tag:
+	    dict['search'] = ''
 	return render_to_response('kb/view.html', dict)
     else:
 	# Search for matching articles
@@ -87,6 +93,7 @@ def show(req, search = None):
 	    f = tag.doc_set.all()
 	    dict['skip_tags'] = 1
 	    dict['title'] = 'Category: %s' % tag.name
+	    dict['search'] = ''
 	elif search:
 	    # the search term is just a search term
 	    dict['title'] = 'Search: "%s"' % search
@@ -97,8 +104,7 @@ def show(req, search = None):
 	else:
 	    # there is no search term; toplevel index
 	    dict['title'] = 'Knowledgebase'
-	    dict['message'] = 'Please choose a category or enter a search term.'
-	    f = []
+	    return render_to_response('kb/kb.html', dict)
 
 	dict['docs'] = []
 	for d in f:

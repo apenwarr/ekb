@@ -3,7 +3,7 @@
 
 {% block title %}{{title}} - EQL Search{% endblock %}
 
-{% block main %}
+{% block pre_search %}
     <h1>{{title}}</h1>
     
     {% if message %}<p>{{message}}</p>{% endif %}
@@ -23,5 +23,8 @@
 	  {% endif %}
 	</dd>
     {% endfor %}
+    {% if not docs %}
+        <dd>No matches.</dd>
+    {% endif %}
     </dl>
 {% endblock %}
