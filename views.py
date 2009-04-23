@@ -37,7 +37,21 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
+def _try_include(match):
+    refname = match.group(1)
+    print 'try_include: {{%s}}' % str(refname)
+    d = _try_get(Doc.objects, filename=str(refname))
+    if d:
+	return d.text
+    return '[[include:%s]]' % refname
+
 def _do_markdown(text):
+    # handle "include" references.  These are our own creation, of the
+    # form: [[include:refname]]
+    # We just replace that text with the verbatim contents of the referred
+    # document.
+    text = re.sub(r'\[\[include:([^]]*)\]\]', _try_include, text)
+    
     # find all markdown 'refs' that refer to kb pages.
     # Markdown refs are of the form: [Description String] [refname]
     # And we need to add a line like:
@@ -48,6 +62,7 @@ def _do_markdown(text):
 	d = _try_get(Doc.objects, filename=ref)
 	if d:
 	    text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
+
     return markdown.Markdown(str(text)).toString()
 
 def show(req, search = None):
