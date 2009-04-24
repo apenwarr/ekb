@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponsePermanentRedirect
 import re, datetime, markdown
 from helpers import *
-from kb.models import Doc, Tag
+from kb.models import Doc, Tag, Word
 
 def _try_get(queryset, **kwargs):
     for i in queryset.filter(**kwargs):
@@ -108,7 +108,7 @@ def show(req, search = None):
 
     if search:
 	dict['urlappend'] = '?q=%s' % search
-    want_words = search.split()
+    want_words = search.lower().split()
     h = HtmlHighlighter(want_words, 'strong')
 
     if search:
@@ -159,10 +159,28 @@ def show(req, search = None):
 	elif search:
 	    # the search term is just a search term
 	    dict['title'] = 'Search: "%s"' % search
-	    f = Doc.objects.all()
+	    docs = Doc.objects.all()
+	    docweights = {}
+	    words = []
 	    for word in want_words:
-		f = f & (Doc.objects.filter(title__icontains = word) |
-			 Doc.objects.filter(text__icontains = word))
+		w = _try_get(Word.objects, name=word)
+		if not w:
+		    # word isn't in any doc, so empty search results
+		    docs = []
+		    break
+		words.append(w)
+		docs = docs & w.doc_set.all()
+	    for doc in docs:
+		weight = 1.0
+		for word in words:
+		    # we know this every word is in every remaining doc
+		    weight *= doc.wordweight_set.get(word=w).weight
+		docweights[doc] = weight
+	    f = []
+	    for doc,weight in sorted(docweights.items(),
+				     lambda x,y: cmp(y[1],x[1])):
+		if weight > 0.0:
+		    f.append(doc)
 	else:
 	    # there is no search term; toplevel index
 	    dict['title'] = 'Knowledgebase'
