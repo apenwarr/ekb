@@ -85,7 +85,7 @@ def _do_markdown(text):
 	if d:
 	    text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
 
-    return markdown.Markdown(str(text)).toString()
+    return markdown.markdown(str(text))
 
 def get_dochtml(filename):
     doc = _try_get(Doc.objects, filename=filename)
