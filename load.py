@@ -1,6 +1,7 @@
 import os, time, datetime, re
 from django.db import transaction
 from models import Doc, Tag, Word, WordWeight, RelatedWeight
+from helpers import *
 
 _fromtimestamp = datetime.datetime.fromtimestamp
 
@@ -87,7 +88,11 @@ def _calc_word_frequencies():
     globwords = {}
     for doc in Doc.objects.iterator():
 	print ' %s' % doc.filename
-	words = [w.lower() for w in re.findall(r"(\w+(?:[.']\w+)?)", doc.text)]
+	textbits = [doc.title, doc.title,  # title gets bonus points
+		    doc.filename, doc.text]
+	textbits += [t.name for t in doc.tags.all()]
+	fulltext = join(' ', textbits)
+	words = [w.lower() for w in re.findall(r"(\w+(?:[.']\w+)?)", fulltext)]
 	total = len(words)*1.0
 	d = {}
 	print '   %d total words' % total
