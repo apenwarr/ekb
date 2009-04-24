@@ -1,4 +1,4 @@
-import os, time, datetime, re
+import sys, os, time, datetime, re
 from django.db import transaction
 from models import Doc, Tag, Word, WordWeight, RelatedWeight
 from helpers import *
@@ -120,9 +120,12 @@ def _calc_related_matrix():
     docs = list(Doc.objects.all())
     docwords = {}
     for doc in docs:
+	sys.stdout.write('.')
+	sys.stdout.flush()
 	l = docwords[doc] = {}
 	for ww in doc.wordweight_set.iterator():
 	    l[ww.word.name] = ww.weight
+    print
 
     correlations = {}
     for doc in docs:
@@ -134,11 +137,11 @@ def _calc_related_matrix():
 	    l[doc2] = sum(bits)
 
     for doc in correlations:
-	print '%s:' % doc.filename
+	#print '%s:' % doc.filename
 	for doc2,weight in sorted(correlations[doc].items(),
 			   lambda x,y: cmp(y[1], x[1])):
 	    RelatedWeight.objects.create(parent=doc, doc=doc2, weight=weight)
-	    print '  %s: %f' % (doc2.filename, weight)
+	    #print '  %s: %f' % (doc2.filename, weight)
 
 def load_all(topdir):
     transaction.enter_transaction_management()
