@@ -1,8 +1,10 @@
 import os, time, datetime
+from django.db import transaction
 from models import Doc, Tag
 
 _fromtimestamp = datetime.datetime.fromtimestamp
 
+@transaction.commit_manually
 def load_all(topdir):
     seen = {}
     id_seen = {}
@@ -77,3 +79,5 @@ def load_all(topdir):
 	    for tname in filter(None, tags):
 		(t, created) = Tag.objects.get_or_create(name=tname)
 		d.tags.add(t)
+		
+    transaction.commit()
