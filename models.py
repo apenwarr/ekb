@@ -12,7 +12,8 @@ class Doc(models.Model):
     title = models.CharField(max_length=200, db_index=True, unique=True)
     last_modified = models.DateTimeField()
     tags = models.ManyToManyField(Tag)
-    related = models.ManyToManyField('self')
+    related = models.ManyToManyField('self', through='RelatedWeight',
+				     symmetrical=False)
     words = models.ManyToManyField(Word, through='WordWeight')
     text = models.TextField()
 
@@ -24,3 +25,7 @@ class WordWeight(models.Model):
     doc = models.ForeignKey(Doc)
     weight = models.FloatField()
 
+class RelatedWeight(models.Model):
+    parent = models.ForeignKey(Doc, related_name = 'related_to')
+    doc = models.ForeignKey(Doc, related_name = 'related_from')
+    weight = models.FloatField()

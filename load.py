@@ -1,6 +1,6 @@
 import os, time, datetime, re
 from django.db import transaction
-from models import Doc, Tag, Word, WordWeight
+from models import Doc, Tag, Word, WordWeight, RelatedWeight
 
 _fromtimestamp = datetime.datetime.fromtimestamp
 
@@ -110,9 +110,36 @@ def _calc_word_frequencies():
     for word in globwords.values():
 	word.save()
 
+def _calc_related_matrix():
+    print 'Calculating related documents'
+    docs = list(Doc.objects.all())
+    docwords = {}
+    for doc in docs:
+	l = docwords[doc] = {}
+	for ww in doc.wordweight_set.iterator():
+	    l[ww.word.name] = ww.weight
+
+    correlations = {}
+    for doc in docs:
+	l = correlations[doc] = {}
+	for doc2 in docs:
+	    if doc2==doc: continue
+	    bits = [docwords[doc2].get(word,0)*weight
+		      for word,weight in docwords[doc].iteritems()]
+	    l[doc2] = sum(bits)
+
+    for doc in correlations:
+	print '%s:' % doc.filename
+	for doc2,weight in sorted(correlations[doc].items(),
+			   lambda x,y: cmp(y[1], x[1])):
+	    RelatedWeight.objects.create(parent=doc, doc=doc2, weight=weight)
+	    print '  %s: %f' % (doc2.filename, weight)
+
 def load_all(topdir):
     transaction.enter_transaction_management()
     transaction.managed()
     _flush_and_load(topdir)
     _calc_word_frequencies()
+    _calc_related_matrix()
+    print 'Committing'
     transaction.commit()
