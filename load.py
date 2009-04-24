@@ -1,11 +1,10 @@
-import os, time, datetime
+import os, time, datetime, re
 from django.db import transaction
-from models import Doc, Tag
+from models import Doc, Tag, Word, WordWeight
 
 _fromtimestamp = datetime.datetime.fromtimestamp
 
-@transaction.commit_manually
-def load_all(topdir):
+def _flush_and_load(topdir):
     seen = {}
     id_seen = {}
     name_to_id = {}
@@ -62,6 +61,7 @@ def load_all(topdir):
 		    raise KeyError('Unknown header: "%s"' % k)
 		line = f.readline()
 
+	    tags = filter(None, tags)
 	    print "  %s (tags=%s)" % (fullpath, repr(tags))
 
 	    id = name_to_id.get(filename)
@@ -76,8 +76,43 @@ def load_all(topdir):
 		    last_modified = _fromtimestamp(os.stat(fullpath)[8]),
 		    text = f.read())
 	    d.save()
-	    for tname in filter(None, tags):
+	    for tname in tags:
 		(t, created) = Tag.objects.get_or_create(name=tname)
 		d.tags.add(t)
-		
+
+def _calc_word_frequencies():
+    Word.objects.all().delete()
+    WordWeight.objects.all().delete()
+    
+    globwords = {}
+    for doc in Doc.objects.iterator():
+	print ' %s' % doc.filename
+	words = [w.lower() for w in re.findall(r"(\w+(?:[.']\w+)?)", doc.text)]
+	total = len(words)*1.0
+	d = {}
+	print '   %d total words' % total
+	for w in words:
+	    d[w] = d.get(w, 0) + 1
+	print '   %d unique words' % len(d.keys())
+	new = 0
+	for w in d:
+	    count = d[w]
+	    word = globwords.get(w)
+	    if not word:
+		word = Word.objects.create(name=w, total=0)
+		globwords[w] = word
+		new += 1
+	    word.total += count
+	    ww = WordWeight.objects.create(word=word, doc=doc,
+					   weight=count/total)
+	print '   %d new words' % new
+    print ' %d total unique words' % len(globwords)
+    for word in globwords.values():
+	word.save()
+
+def load_all(topdir):
+    transaction.enter_transaction_management()
+    transaction.managed()
+    _flush_and_load(topdir)
+    _calc_word_frequencies()
     transaction.commit()
