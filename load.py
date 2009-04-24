@@ -92,7 +92,7 @@ def _calc_word_frequencies():
 		    doc.filename, doc.text]
 	textbits += [t.name for t in doc.tags.all()]
 	fulltext = join(' ', textbits)
-	words = [w.lower() for w in re.findall(r"(\w+(?:[.']\w+)?)", fulltext)]
+	words = [w.lower() for w in re.findall(r"(\w+(?:[.'#%@]\w+)?)", fulltext)]
 	total = len(words)*1.0
 	d = {}
 	print '   %d total words' % total
