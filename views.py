@@ -37,43 +37,8 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
-_includes_in_progress = {}
-def _try_include(match):
-    indent = match.group(2)
-    indent = indent and int(indent) or 0
-    refname = match.group(3)
-    d = _try_get(Doc.objects, filename=str(refname))
-    if refname in _includes_in_progress:
-	return '[[aborted-recursive-include:%s]]' % refname
-    elif d:
-	_includes_in_progress[refname] = 1
-	t = _process_includes(d.text)
-
-	# handle the specified indent: make all headers in the included
-	# document 'indent' levels deeper than they were before.
-	t = re.sub(re.compile(r'^#', re.M), '#'*(indent+1), t)
-	
-	del _includes_in_progress[refname]
-	return t
-    else:
-	return '[[missing-include:%s]]' % refname
-
-def _process_includes(text, depth=1):
-    # handle "include" references.  These are our own creation, of the
-    # form: [[include:refname]]
-    # We just replace that text with the verbatim contents of the referred
-    # document.
-    t = re.sub(r'\[\[include(\+(\d+))?:([^]]*)\]\]', _try_include, text)
-
-    # normalize the headers: the toplevel header should be h1, no matter
-    # what it is in the document itself.
-    allheaders = re.findall(re.compile('^(#+)', re.M), t)
-    minheader = min([99] + [len(h) for h in allheaders])
-    return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
 def _do_markdown(text):
-    text = _process_includes(text, depth=3)
-    
     # find all markdown 'refs' that refer to kb pages.
     # Markdown refs are of the form: [Description String] [refname]
     # And we need to add a line like:
@@ -89,7 +54,7 @@ def _do_markdown(text):
 
 def get_dochtml(filename):
     doc = _try_get(Doc.objects, filename=filename)
-    return _do_markdown(doc.text)
+    return _do_markdown(doc.expanded_text(depth=3))
 
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
@@ -133,7 +98,7 @@ def show(req, search = None):
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
-	dict['text'] = h.highlight(doc.text, _do_markdown)
+	dict['text'] = h.highlight(doc.expanded_text(depth=3), _do_markdown)
 	dict['similar'] = (doc
 			   .related_to.order_by('-weight')
 			   .filter(weight__gt=0.05)
@@ -188,7 +153,7 @@ def show(req, search = None):
 
 	dict['docs'] = []
 	for d in f:
-	    d.autosummary = _autosummary(d.text, want_words, h)
+	    d.autosummary = _autosummary(d.expanded_text(), want_words, h)
 	    dict['docs'].append(d)
 		
 	return render_to_response('kb/search.html', dict)
