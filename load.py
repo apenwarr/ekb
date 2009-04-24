@@ -104,7 +104,7 @@ def _calc_word_frequencies():
 		new += 1
 	    word.total += count
 	    ww = WordWeight.objects.create(word=word, doc=doc,
-					   weight=count/total)
+					   weight=(count/total)**.5)
 	print '   %d new words' % new
     print ' %d total unique words' % len(globwords)
     for word in globwords.values():
