@@ -10,9 +10,15 @@ def _try_get(queryset, **kwargs):
     return None
 
 def _autosummary(text, want_words, highlighter, width = 120):
+    # sort words from least to most common; the blurb should show the most
+    # interesting word if possible
+    sortwords = [w.name for w in 
+		 Word.objects.filter(name__in = want_words).order_by('total')]
+    print sortwords
+    
     text = " " + re.sub('#+', '', text) + " "
     match = matchend = -1
-    for w in want_words:
+    for w in sortwords:
 	match = text.lower().find(w.lower())
 	if match >= 0:
 	    matchend = match + len(w)
