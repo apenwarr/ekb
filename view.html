@@ -17,4 +17,21 @@
     </p>
 
     {% autoescape off %}{{ text }}{% endautoescape %}
+
+    {% if similar %}
+        <h3>Related Articles</h3>
+	<ul>
+	{% for a in similar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a> ({{a.weight}})</li>
+	{% endfor %}
+	</ul>
+    {% endif %}
+    {% if dissimilar %}
+        <h3>Unrelated Articles</h3>
+	<ul>
+	{% for a in dissimilar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a> ({{a.weight}})</li>
+	{% endfor %}
+	</ul>
+    {% endif %}
 {% endblock %}
