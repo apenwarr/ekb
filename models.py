@@ -55,9 +55,21 @@ class Doc(models.Model):
 	minheader = min([99] + [len(h) for h in allheaders])
 	return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
-    def expanded_text(self, depth=1):
-	return self._process_includes(self.text, depth=depth)
+    def expanded_text(self, headerdepth=1):
+	text = self._process_includes(self.text, depth=headerdepth)
 
+	# find all markdown 'refs' that refer to kb pages.
+	# Markdown refs are of the form: [Description String] [refname]
+	# And we need to add a line like:
+	#   [refname]: /the/path
+	# to the bottom in order to make the ref resolvable.
+	refs = re.findall(r'\[[^]]*\]\s*\[([^]]*)\]', text)
+	for ref in refs:
+	    d = _try_get(Doc.objects, filename=ref)
+	    if d:
+		text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
+	return text
+		
     def similar(self, max=4):
 	return (self.related_to
 		    .order_by('-weight')

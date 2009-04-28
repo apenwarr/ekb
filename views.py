@@ -44,24 +44,6 @@ def _autosummary(text, want_words, highlighter, width = 120):
     return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
 
 
-def _do_markdown(text):
-    # find all markdown 'refs' that refer to kb pages.
-    # Markdown refs are of the form: [Description String] [refname]
-    # And we need to add a line like:
-    #   [refname]: /the/path
-    # to the bottom in order to make the ref resolvable.
-    refs = re.findall(r'\[[^]]*\]\s*\[([^]]*)\]', text)
-    for ref in refs:
-	d = _try_get(Doc.objects, filename=ref)
-	if d:
-	    text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
-    #return "<pre>%s</pre>" % str(text)
-    return markdown.markdown(str(text))
-
-def get_dochtml(filename):
-    doc = _try_get(Doc.objects, filename=filename)
-    return _do_markdown(doc.expanded_text(depth=3))
-
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
     if not search:
@@ -104,7 +86,8 @@ def show(req, search = None):
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
-	dict['text'] = h.highlight(doc.expanded_text(depth=3), _do_markdown)
+	dict['text'] = h.highlight(doc.expanded_text(headerdepth=3),
+				   markdown.markdown)
 	dict['similar'] = doc.similar(max=4)
 	dict['dissimilar'] = doc.dissimilar(max=4)
 	if tag:
