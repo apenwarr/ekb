@@ -31,7 +31,8 @@ class Doc(models.Model):
 	return None
 
     def get_url(self):
-	return "/kb/%d/%s" % (self.id, self.filename)
+	#return "/kb/%d/%s" % (self.id, self.filename)
+	return "/kb/%d" % self.id
 
     def _try_include(self, match):
 	indent = match.group(2)
