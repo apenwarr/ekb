@@ -75,8 +75,7 @@ def _flush_and_load(topdir):
 		    filename = filename,
 		    pathname = os.path.join(dirpath[len(topdir):], filename),
 		    title = title,
-		    last_modified = _fromtimestamp(os.stat(fullpath)[8]),
-		    text = f.read())
+		    last_modified = _fromtimestamp(os.stat(fullpath)[8]))
 	    d.save()
 	    for tname in tags:
 		(t, created) = Tag.objects.get_or_create(name=tname)

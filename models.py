@@ -2,10 +2,6 @@ from settings import DEBUG
 from django.db import models
 import re
 
-def _skipheaders(s):
-    spl = s.split('\n\n', 1) + ['']
-    return spl[1]
-
 class Tag(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
 
@@ -23,7 +19,6 @@ class Doc(models.Model):
     related = models.ManyToManyField('self', through='RelatedWeight',
 				     symmetrical=False)
     words = models.ManyToManyField(Word, through='WordWeight')
-    text = models.TextField()
 
     @staticmethod
     def try_get(**kwargs):
@@ -44,7 +39,7 @@ class Doc(models.Model):
 	    return '[[aborted-recursive-include:%s]]' % refname
 	elif d:
 	    _includes_in_progress[refname] = 1
-	    t = self._process_includes(d.text, depth=indent+1)
+	    t = self._process_includes(d.text(), depth=indent+1)
 	    del _includes_in_progress[refname]
 	    return t
 	else:
@@ -63,12 +58,14 @@ class Doc(models.Model):
 	minheader = min([99] + [len(h) for h in allheaders])
 	return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
+    def text(self):
+	f = open('docs/%s' % self.pathname)
+	while f.readline().strip() != '':
+	    pass
+	return f.read()
+
     def expanded_text(self, headerdepth=1):
-	text = self.text
-	if DEBUG:
-	    # so you don't have to 'make load' all the time while testing
-	    text = _skipheaders(open('docs/%s' % self.pathname).read())
-	text = self._process_includes(text, depth=headerdepth)
+	text = self._process_includes(self.text(), depth=headerdepth)
 
 	# find all markdown 'refs' that refer to kb pages.
 	# Markdown refs are of the form: [Description String] [refname]
