@@ -13,6 +13,15 @@
 	      </a></li>
 	{% endfor %}
     </ul>
+    
+    {% if similar %}
+        <h3>Related Articles</h3>
+	<ul class='sidemenu'>
+	{% for a in similar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a></li>
+	{% endfor %}
+	</ul>
+    {% endif %}
 {% endblock %}
 
 {% block main %}
