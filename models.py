@@ -24,6 +24,12 @@ class Doc(models.Model):
     words = models.ManyToManyField(Word, through='WordWeight')
     text = models.TextField()
 
+    @staticmethod
+    def try_get(**kwargs):
+    	for i in Doc.objects.filter(**kwargs):
+	    return i
+	return None
+
     def get_url(self):
 	return "/kb/%d/%s" % (self.id, self.filename)
 
