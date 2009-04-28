@@ -74,7 +74,7 @@ def show(req, search = None):
 	
     if doc:
 	# View the specific article they requested.
-	pagebase = '/kb/%d/%s' % (doc.id, doc.filename)
+	pagebase = doc.get_url()
 	page = pagebase + dict.get('urlappend', '')
 	if req.path != pagebase:
 	    return HttpResponsePermanentRedirect(page)

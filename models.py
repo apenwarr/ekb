@@ -73,7 +73,7 @@ class Doc(models.Model):
 	for ref in refs:
 	    d = _try_get(Doc.objects, filename=ref)
 	    if d:
-		text += "\n[%s]: /kb/%d/%s\n" % (ref, d.id, d.filename)
+		text += "\n[%s]: %s\n" % (ref, d.get_url())
 	return text
 		
     def similar(self, max=4):
