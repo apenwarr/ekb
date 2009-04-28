@@ -1,10 +1,10 @@
+from settings import DEBUG
 from django.db import models
 import re
 
-def _try_get(queryset, **kwargs):
-    for i in queryset.filter(**kwargs):
-	return i
-    return None
+def _skipheaders(s):
+    spl = s.split('\n\n', 1) + ['']
+    return spl[1]
 
 class Tag(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
@@ -16,6 +16,7 @@ class Word(models.Model):
 _includes_in_progress = {}
 class Doc(models.Model):
     filename = models.CharField(max_length=200, db_index=True, unique=True)
+    pathname = models.CharField(max_length=400, db_index=False, unique=True)
     title = models.CharField(max_length=200, db_index=True, unique=True)
     last_modified = models.DateTimeField()
     tags = models.ManyToManyField(Tag)
@@ -38,7 +39,7 @@ class Doc(models.Model):
 	indent = match.group(2)
 	indent = indent and int(indent) or 0
 	refname = match.group(3)
-	d = _try_get(Doc.objects, filename=str(refname))
+	d = Doc.try_get(filename=str(refname))
 	if refname in _includes_in_progress:
 	    return '[[aborted-recursive-include:%s]]' % refname
 	elif d:
@@ -63,7 +64,11 @@ class Doc(models.Model):
 	return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
     def expanded_text(self, headerdepth=1):
-	text = self._process_includes(self.text, depth=headerdepth)
+	text = self.text
+	if DEBUG:
+	    # so you don't have to 'make load' all the time while testing
+	    text = _skipheaders(open('docs/%s' % self.pathname).read())
+	text = self._process_includes(text, depth=headerdepth)
 
 	# find all markdown 'refs' that refer to kb pages.
 	# Markdown refs are of the form: [Description String] [refname]
@@ -72,7 +77,7 @@ class Doc(models.Model):
 	# to the bottom in order to make the ref resolvable.
 	refs = re.findall(r'\[[^]]*\]\s*\[([^]]*)\]', text)
 	for ref in refs:
-	    d = _try_get(Doc.objects, filename=ref)
+	    d = Doc.try_get(filename=ref)
 	    if d:
 		text += "\n[%s]: %s\n" % (ref, d.get_url())
 	return text

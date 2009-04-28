@@ -73,6 +73,7 @@ def _flush_and_load(topdir):
 		
 	    d = Doc(id = id,
 		    filename = filename,
+		    pathname = os.path.join(dirpath[len(topdir):], filename),
 		    title = title,
 		    last_modified = _fromtimestamp(os.stat(fullpath)[8]),
 		    text = f.read())
