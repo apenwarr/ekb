@@ -37,15 +37,15 @@ def _flush_and_load(topdir):
 	assert(dirpath.startswith(topdir))
 	tags = dirpath[len(topdir):].split("/")
 	for filename in filenames:
-	    if filename[-1] == '~' or filename[0] == '.':
-		continue
+	    if (filename[-1] == '~' or filename[0] == '.'
+	        or filename=='Makefile'):
+		   continue
 
 	    if filename in seen:
 		raise KeyError('Duplicate filename "%s"' % filename)
 	    seen[filename] = 1
 		
 	    fullpath = os.path.join(dirpath, filename)
-
 	    title = filename
 
 	    f = open(fullpath)
