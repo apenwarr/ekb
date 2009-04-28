@@ -1,0 +1,11 @@
+title: My doing things doc
+tags: Foo Monkeys, Blah Weasels,
+
+This is some text about doing things.
+
+<ul>
+
+This indented part includes wumpkins from doing-things:
+
+[[include:wumpkins]]
+</ul>
