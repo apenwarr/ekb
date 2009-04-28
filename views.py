@@ -82,7 +82,7 @@ def show(req, search = None):
 	if not tag and not search and len(doc.tags.all()) > 0:
 	    t = doc.tags.all()[0]
 	    dict['menuitems'].append(('/kb/%s' % t.name, t.name))
-	dict['menuitems'].append((page, 'Article #%d' % doc.id))
+	dict['menuitems'].append((page, 'KB%d' % doc.id))
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
