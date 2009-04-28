@@ -58,6 +58,18 @@ class Doc(models.Model):
     def expanded_text(self, depth=1):
 	return self._process_includes(self.text, depth=depth)
 
+    def similar(self, max=4):
+	return (self.related_to
+		    .order_by('-weight')
+		    .filter(weight__gt=0.05)
+		    [:max])
+	
+    def dissimilar(self, max=4):
+	return (self.related_to
+		    .order_by('weight')
+		    .filter(weight__gt=0.001)
+		    [:max])
+
 class WordWeight(models.Model):
     word = models.ForeignKey(Word)
     doc = models.ForeignKey(Doc)

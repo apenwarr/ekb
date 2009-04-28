@@ -105,14 +105,8 @@ def show(req, search = None):
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
 	dict['text'] = h.highlight(doc.expanded_text(depth=3), _do_markdown)
-	dict['similar'] = (doc
-			   .related_to.order_by('-weight')
-			   .filter(weight__gt=0.05)
-			   [:4])
-	dict['dissimilar'] = (doc
-			      .related_to.order_by('weight')
-			      .filter(weight__gt=0.001)
-			      [:4])
+	dict['similar'] = doc.similar(max=4)
+	dict['dissimilar'] = doc.dissimilar(max=4)
 	if tag:
 	    dict['search'] = ''
 	return render_to_response('kb/view.html', dict)
