@@ -121,7 +121,7 @@ def show(req, search = None):
 	    for doc in docs:
 		weight = 1.0
 		for word in words:
-		    # we know this every word is in every remaining doc
+		    # we know every word is in every remaining doc
 		    weight *= doc.wordweight_set.get(word=w).weight
 		docweights[doc] = weight
 	    f = []

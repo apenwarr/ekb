@@ -112,11 +112,12 @@ def _calc_word_frequencies():
 					   weight=(count/total)**.5)
 	print '   %d new words' % new
     print ' %d total unique words' % len(globwords)
+    print 'Saving words'
     for word in globwords.values():
 	word.save()
 
 def _calc_related_matrix():
-    print 'Calculating related documents'
+    print 'Reading word weights'
     docs = list(Doc.objects.all())
     docwords = {}
     for doc in docs:
@@ -127,6 +128,7 @@ def _calc_related_matrix():
 	    l[ww.word.name] = ww.weight
     print
 
+    print 'Calculating related documents'
     correlations = {}
     for doc in docs:
 	l = correlations[doc] = {}
