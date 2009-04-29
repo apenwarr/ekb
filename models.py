@@ -30,26 +30,33 @@ class Doc(models.Model):
 	#return "/kb/%d/%s" % (self.id, self.filename)
 	return "/kb/%d" % self.id
 
-    def _try_include(self, indent, filename):
+    def _try_include(self, indent, filename, isfaq):
 	indent = indent and int(indent) or 0
 	d = Doc.try_get(filename=str(filename))
 	if filename in _includes_in_progress:
 	    return '[[aborted-recursive-include:%s]]' % filename
-	elif d:
+	elif not d:
+	    return '[[missing-include:%s]]' % filename
+	else:
 	    _includes_in_progress[filename] = 1
 	    t = self._process_includes(d.text(), depth=indent+1)
+	    if isfaq:
+		parts = re.split(re.compile(r'^#+.*$', re.M), t)
+		assert(len(parts) == 3)
+		t = "%s %s\n\n%s\n\n" % ('#'*(indent+1),
+					 re.sub('\n', ' ', parts[1].strip()),
+					 parts[2].strip())
 	    del _includes_in_progress[filename]
 	    return t
-	else:
-	    return '[[missing-include:%s]]' % filename
 
     def _process_includes(self, text, depth):
 	# handle "include" references.  These are our own creation (not
 	# standard markdown), of the form: [[include:filename]]
 	# We just replace that text with the verbatim contents of the referred
 	# document.
-	t = re.sub(r'\[\[include(\+(\d+))?:([^]]*)\]\]',
-		   lambda m: self._try_include(m.group(2), m.group(3)),
+	t = re.sub(r'\[\[(faq)?include(\+(\d+))?:([^]]*)\]\]',
+		   lambda m: self._try_include(m.group(3), m.group(4),
+					       m.group(1) == 'faq'),
 		   text)
 
 	# normalize the headers: the toplevel header should be h1, no matter
