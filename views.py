@@ -74,13 +74,17 @@ def show(req, search = None):
     if search:
 	dict['urlappend'] = '?q=%s' % search
     want_words = search.lower().split()
-    h = HtmlHighlighter(want_words, 'strong')
 
     if search:
 	if tag:
 	    dict['menuitems'].append(('/kb/%s' % search, tag.name))
 	else:
 	    dict['menuitems'].append(('/kb/%s' % search, '"%s"' % search))
+
+    if tag:
+	h = HtmlHighlighter([], '')
+    else:
+	h = HtmlHighlighter(want_words, 'strong')
 
     dict['search'] = search
 	
