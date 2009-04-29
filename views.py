@@ -20,11 +20,16 @@ def _autosummary(text, want_words, highlighter, width = 120):
     # interesting word if possible
     sortwords = [w.name for w in 
 		 Word.objects.filter(name__in = want_words).order_by('total')]
-    print sortwords
+
+    # get rid of some markdown cruft
+    text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
+		  lambda m: _fixheader(m.group(1), m.group(2)),
+		  text)
+    text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
+    text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
+    text = re.sub(r'[*`]', ' ', text)
+    text = " %s " % text
     
-    text = " " + re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
-			lambda m: _fixheader(m.group(1), m.group(2)),
-			text) + " "
     match = matchend = -1
     for w in sortwords:
 	match = text.lower().find(w.lower())
