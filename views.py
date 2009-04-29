@@ -9,6 +9,12 @@ def _try_get(queryset, **kwargs):
 	return i
     return None
 
+def _fixheader(s, lastc):
+    if lastc.isalnum():
+	return s+lastc+':'
+    else:
+	return s+lastc
+
 def _autosummary(text, want_words, highlighter, width = 120):
     # sort words from least to most common; the blurb should show the most
     # interesting word if possible
@@ -16,7 +22,9 @@ def _autosummary(text, want_words, highlighter, width = 120):
 		 Word.objects.filter(name__in = want_words).order_by('total')]
     print sortwords
     
-    text = " " + re.sub('#+', '', text) + " "
+    text = " " + re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
+			lambda m: _fixheader(m.group(1), m.group(2)),
+			text) + " "
     match = matchend = -1
     for w in sortwords:
 	match = text.lower().find(w.lower())
@@ -35,13 +43,17 @@ def _autosummary(text, want_words, highlighter, width = 120):
 	start += 1
     end = start + width
     if end >= len(text):
-	end = len(text)-1
-    while end >= 0 and not text[end].isalnum():
-	end -= 1
-    while end < len(text) and text[end].isalnum():
-	end += 1
+	text = text[start:]
+	hi = ''
+    else:
+	while end >= 0 and not text[end].isalnum():
+	    end -= 1
+	while end < len(text) and text[end].isalnum():
+	    end += 1
+	text = text[start:end]
+	hi = "<b>...</b>"
 
-    return highlighter.highlight(text[start:end], html.escape) + "<b>...</b>"
+    return highlighter.highlight(text, html.escape) + hi
 
 
 def show(req, search = None):

@@ -16,7 +16,7 @@
 	<dd>
 	  {% autoescape off %}{{doc.autosummary}}{% endautoescape %}
 	  {% if doc.tags.count and not skip_tags %}
-	    <br><b>Categories:
+	    <br><b>Categor{{doc.tags.all|pluralize:"y,ies"}}:
 	    {% for tag in doc.tags.all %}
 	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a
 	    >{% if not forloop.last %},{% endif %}
