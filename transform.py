@@ -52,7 +52,11 @@ class Node:
 	if self.name == 'stepxmp':
 	    return ''
 	elif self.name == 'note':
-	    return "\n\nNote:\n\n- %s\n\n" % indent(self.subtext(), 2)
+	    st = self.subtext()
+	    if st:
+		return "\n\nNote:\n\n- %s\n\n" % indent(st, 2)
+	    else:
+		return ''
 	elif self.name in ['uicontrol', 'wintitle', 'userinput',
 			   'filepath', 'fn', 'b']:
 	    return " **%s** " % clean(self.subtext().strip())
@@ -139,14 +143,19 @@ def process_list(steps, itemname, prefix):
 	if not step.name == itemname:
 	    die(step)
 	t = []
+	if step.text:
+	    t.append(step.text)
 	for bit in step:
 	    if bit.name == 'substeps':
-		t.append(process_list(bit, "substep", "- "))
+		e = process_list(bit, "substep", "- ")
 	    elif bit.name == 'choices':
-		t.append(process_list(bit, "choice", "- "))
+		e = process_list(bit, "choice", "- ")
 	    else:
-		t.append(bit.render())
-	out.append("\n%s%s" % (prefix, indent(join("\n", t), len(prefix))))
+		e = bit.render()
+	    if e.strip():
+		t.append(e)
+	if t:
+	    out.append("\n%s%s" % (prefix, indent(join("\n", t), 4)))
     return join("\n", out)
     
 
@@ -161,20 +170,28 @@ def process_task(task, filename):
 	    for tb in t:
 		if tb.name == 'prereq':
 		    if tb.nonempty():
-			body.append('# Before you start')
-			body.append(tb.subtext())
+			st = tb.subtext()
+			if st:
+			    body.append('# Before you start')
+			    body.append(st)
 		elif tb.name == 'context':
 		    if tb.nonempty():
-			#body.append('# Context')
-			body.append(tb.subtext())
+			st = tb.subtext()
+			if st:
+			    #body.append('# Context')
+			    body.append(st)
 		elif tb.name == 'steps':
 		    if tb.nonempty():
-			body.append('# Steps')
-			body.append(process_list(tb, "step", "1. "))
+			pl = process_list(tb, "step", "1. ")
+			if pl:
+			    body.append('# Steps')
+			    body.append(pl)
 		elif tb.name == 'postreq':
 		    if tb.nonempty():
-			body.append('# Next steps')
-			body.append(tb.subtext())
+			st = tb.subtext()
+			if st:
+			    body.append('# Next steps')
+			    body.append(st)
 		else:
 		    die(tb)
 	elif t.name == 'reference':
@@ -186,8 +203,9 @@ def process_task(task, filename):
 	else:
 	    die(t)
 
-    return "title: %s\ntags: %s\n\n%s" % (title, join(", ", tags),
-					  join("\n\n", body))
+    if body:
+	return "title: %s\ntags: %s\n\n%s" % (title, join(", ", tags),
+					      join("\n\n", body))
 
 def process(filename):
     tree = xml_to_tree(filename)
@@ -198,7 +216,8 @@ def process(filename):
 	    print_node(sub)
 	    pt = process_task(sub, filename)
 	    print pt
-	    open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
+	    if pt:
+		open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
 	else:
 	    print_node(sub)
 
