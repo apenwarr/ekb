@@ -37,6 +37,7 @@ def _flush_and_load(topdir):
     Doc.objects.all().delete()
 
     print 'loading all from "%s"' % topdir
+    titlemap = {}
     for (dirpath, dirnames, filenames) in os.walk(topdir):
 	assert(dirpath.startswith(topdir))
 	for filename in filenames:
@@ -74,12 +75,18 @@ def _flush_and_load(topdir):
 		id = nextid
 		idfile.write("%d %s\n" % (id, filename))
 	    nextid = max(id+1, nextid)
+
+	    while title in titlemap:
+		print ('WARNING: Duplicate title:\n  "%s"\n  "%s"'
+		       % (filename, titlemap[title].filename))
+		title += " [duplicate]"
 		
 	    d = Doc(id = id,
 		    filename = filename,
 		    pathname = os.path.join(dirpath[len(topdir):], filename),
 		    title = title,
 		    last_modified = _fromtimestamp(os.stat(fullpath)[8]))
+	    titlemap[title] = d
 	    d.save()
 	    for tname in tags:
 		(t, created) = Tag.objects.get_or_create(name=tname)
