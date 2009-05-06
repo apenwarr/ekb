@@ -69,7 +69,7 @@ class Doc(models.Model):
 	f = open('docs/%s' % self.pathname)
 	while f.readline().strip() != '':
 	    pass
-	return f.read()
+	return f.read().decode('utf-8')
 
     def expanded_text(self, headerdepth=1):
 	text = self._process_includes(self.text(), depth=headerdepth)
