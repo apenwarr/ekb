@@ -1,9 +1,35 @@
 from django.shortcuts import render_to_response
 from django.http import HttpResponsePermanentRedirect
+from django.utils import html
 import re, datetime, markdown
-from helpers import *
 from kb.models import Doc, Tag, Word
+from handy import atoi, join, nicedate, pluralize
 
+class HtmlHighlighter:
+    def __init__(self, want_words, highlight_tag):
+	self.wordsub = None
+	self.wordfix = None
+	self.replacement = None
+
+	want_esc = join("|", [re.escape(x) for x in want_words])
+	if want_esc and highlight_tag:
+	    self.wordsub = re.compile('(' + want_esc + ')', re.I)
+	    htag = re.sub(r'\W', '_', highlight_tag)
+	    self.wordfix = re.compile('&lt;%s&gt;(.*?)&lt;/%s&gt;' % (htag, htag))
+	    self.replacement = u'<%s>\\1</%s>' % (htag, htag)
+	
+    def highlight(self, s, process = html.escape):
+	if s is None:
+	    return ''
+	else:
+	    s = unicode(s)
+	if self.wordsub and self.replacement:
+	    s = re.sub(self.wordsub, self.replacement, s)
+	s = process(unicode(s))
+	if self.wordsub and self.replacement:
+	    s = re.sub(self.wordfix, self.replacement, s)
+	return s
+	
 def _try_get(queryset, **kwargs):
     for i in queryset.filter(**kwargs):
 	return i
