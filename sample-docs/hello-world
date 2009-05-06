@@ -1,0 +1,34 @@
+title: Hello world document #1
+tags: Basics
+
+This is the hello world document.
+
+This <strong>is</strong> a bunch of text: Exciting times are ahead!
+16:28 < lkosewsk> we get to use our modest english skills!
+16:29 < apenwarr> Assuming I actually get to work.  Okay, off I go.  My goal
+is to have something publishable by tonight, even if the
+actual content is a bit sparse.
+
+This is a link: [Doing Things][doing-things]
+
+Some preformat:
+
+    pre!
+    linear!
+    
+another:
+
+	pre!
+	multilinear!
+                  
+### Subtitle!
+
+Like crazy!
+
+You might also want to look at [FAQ][faq].
+
+### Subfiles!
+
+[[include:boink]]
+
+[[include:doing-things]]

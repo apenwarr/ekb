@@ -1,0 +1,11 @@
+tags: Basics
+
+This is a wumpkin file.
+
+It links to another one called [doing things][doing-things].
+
+It also includes another one: [[include:doing-things]]
+
+And one which recursively includes another:
+
+[[include:hello-world]]

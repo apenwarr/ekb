@@ -1,0 +1,54 @@
+{% extends "base-home.html" %}
+
+{% block sidebar %}
+    <h3>Categories</h3>
+    <ul class='sidemenu'>
+	{% comment %}
+	<li><a href="/kb/">-All-
+	    <br><span>{{alldocs.count}} 
+	      article{{alldocs.count|pluralize}}</span></a></li>
+	{% endcomment %}
+        {% for tag in alltags.all %}
+            <li><a href="/kb/{{tag.name}}">{{tag.name}} ({{tag.doc_set.count}})
+	      </a></li>
+	{% endfor %}
+    </ul>
+    
+    {% if similar %}
+        <h3>Related Articles</h3>
+	<ul class='sidemenu'>
+	{% for a in similar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a></li>
+	{% endfor %}
+	</ul>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    {% block pre_search %}
+    <h1>Welcome to the Knowledgebase</h1>
+    
+    <p>Please enter a search term or choose a category from the list.</p>
+    {% endblock %}
+    
+    <form id="kbsearch" action="/kb" method="get">
+        <p>
+	<label for="search">Search:</label>
+	<input id="kbsearchbox" type="text" name="q"
+	  value="{{search|default:"Search..."}}"
+	  onfocus="if (this.value=='Search...') this.value=''"
+	  />
+	<input class="button" type="submit" value="Search" title="Search" />
+	</p>
+    </form>
+    
+    {% block post_search %}
+    <script type="text/javascript">
+    if (document.getElementById) 
+        c = document.getElementById('kbsearchbox');
+    else
+        c = document.all['kbsearchbox'];
+    c.focus();
+    </script>
+    {% endblock %}
+{% endblock %}

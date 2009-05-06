@@ -1,0 +1,34 @@
+{% extends "kb.html" %}
+{% load markup %}
+
+{% block title %}{{title}} - EQL Knowledge{% endblock %}
+
+{% block pre_search %}
+    <h1>{{title}}</h1>
+    
+    {% if message %}<p>{{message}}</p>{% endif %}
+    
+    <dl>
+    {% for doc in docs %}
+	<dt>
+	  <a href="/kb/{{doc.id}}/{{doc.filename}}{{urlappend}}">{{doc.title}}</a>
+	</dt>
+	<dd>
+	  {% autoescape off %}{{doc.autosummary}}{% endautoescape %}
+	  {% if doc.tags.count and not skip_tags %}
+	    <br><b>Categor{{doc.tags.all|pluralize:"y,ies"}}:
+	    {% for tag in doc.tags.all %}
+	    <a href="/kb/{{tag.name}}{{urlappend}}">{{tag.name}}</a
+	    >{% if not forloop.last %},{% endif %}
+	    {% endfor %}</b>
+	  {% endif %}
+	</dd>
+    {% endfor %}
+    {% if not docs %}
+        <dd>No matches.</dd>
+    {% endif %}
+    </dl>
+{% endblock %}
+
+{% block post_search %}
+{% endblock %}

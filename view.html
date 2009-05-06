@@ -1,0 +1,37 @@
+{% extends "kb.html" %}
+{% load markup %}
+
+{% block title %}{{title}} - EQL Knowledge{% endblock %}
+
+{% block main %}
+    <h2>{{title}}</h2>
+    <p class="post-info">Last changed <b>{{when}}</b>
+
+    {% if tags %}
+        | Filed under
+	{% for tag in tags %}
+            <a href="/kb/{{tag.name}}">{{tag.name}}</a
+	    >{% if forloop.last %}.{% else %},{% endif %}
+	{% endfor %}
+    {% endif %}
+    </p>
+
+    {% autoescape off %}{{ text }}{% endautoescape %}
+
+    {% if similar %}
+        <h3>Related Articles</h3>
+	<ul>
+	{% for a in similar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a> ({{a.weight}})</li>
+	{% endfor %}
+	</ul>
+    {% endif %}
+    {% if dissimilar %}
+        <h3>Unrelated Articles</h3>
+	<ul>
+	{% for a in dissimilar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a> ({{a.weight}})</li>
+	{% endfor %}
+	</ul>
+    {% endif %}
+{% endblock %}
