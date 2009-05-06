@@ -86,10 +86,10 @@ class Doc(models.Model):
 		text += "\n[%s]: %s\n" % (ref, d.get_url())
 	return text
 		
-    def similar(self, max=4):
+    def similar(self, max=4, minweight=0.05):
 	return (self.related_to
 		    .order_by('-weight')
-		    .filter(weight__gt=0.05)
+		    .filter(weight__gt=minweight)
 		    [:max])
 	
     def dissimilar(self, max=4):
