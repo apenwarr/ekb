@@ -5,6 +5,10 @@ from helpers import *
 
 _fromtimestamp = datetime.datetime.fromtimestamp
 
+def echo(s):
+    sys.stdout.write(s)
+    sys.stdout.flush()
+
 def _flush_and_load(topdir):
     seen = {}
     id_seen = {}
@@ -95,10 +99,10 @@ def _calc_word_frequencies():
 	words = [w.lower() for w in re.findall(r"(\w+(?:[.'#%@]\w+)?)", fulltext)]
 	total = len(words)*1.0
 	d = {}
-	print '   %d total words' % total
+	echo('   %d total words' % total)
 	for w in words:
 	    d[w] = d.get(w, 0) + 1
-	print '   %d unique words' % len(d.keys())
+	echo(', %d unique' % len(d.keys()))
 	new = 0
 	for w in d:
 	    count = d[w]
@@ -110,7 +114,7 @@ def _calc_word_frequencies():
 	    word.total += count
 	    ww = WordWeight.objects.create(word=word, doc=doc,
 					   weight=(count/total)**.5)
-	print '   %d new words' % new
+	echo(', %d new\n' % new)
     print ' %d total unique words' % len(globwords)
     print 'Saving words'
     for word in globwords.values():
@@ -121,8 +125,7 @@ def _calc_related_matrix():
     docs = list(Doc.objects.all())
     docwords = {}
     for doc in docs:
-	sys.stdout.write('.')
-	sys.stdout.flush()
+        echo('.')
 	l = docwords[doc] = {}
 	for ww in doc.wordweight_set.iterator():
 	    l[ww.word.name] = ww.weight
@@ -131,15 +134,16 @@ def _calc_related_matrix():
     print 'Calculating related documents'
     correlations = {}
     for doc in docs:
-	sys.stdout.write('.')
-	sys.stdout.flush()
+        echo('.')
 	l = correlations[doc] = {}
 	for doc2 in docs:
 	    if doc2==doc: continue
 	    bits = [docwords[doc2].get(word,0)*weight
 		      for word,weight in docwords[doc].iteritems()]
 	    l[doc2] = sum(bits)
+    print
 
+    print 'Saving correlations'
     for doc in correlations:
 	#print '%s:' % doc.filename
 	for doc2,weight in sorted(correlations[doc].items(),
