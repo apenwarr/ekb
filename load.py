@@ -131,6 +131,8 @@ def _calc_related_matrix():
     print 'Calculating related documents'
     correlations = {}
     for doc in docs:
+	sys.stdout.write('.')
+	sys.stdout.flush()
 	l = correlations[doc] = {}
 	for doc2 in docs:
 	    if doc2==doc: continue
