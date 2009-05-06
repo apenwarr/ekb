@@ -35,8 +35,8 @@ def _flush_and_load(topdir):
     print 'loading all from "%s"' % topdir
     for (dirpath, dirnames, filenames) in os.walk(topdir):
 	assert(dirpath.startswith(topdir))
-	tags = dirpath[len(topdir):].split("/")
 	for filename in filenames:
+	    tags = dirpath[len(topdir):].split("/")
 	    if (filename[-1] == '~' or filename[0] == '.'
 	        or filename=='Makefile'):
 		   continue
