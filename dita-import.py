@@ -84,7 +84,7 @@ class Node:
 	text = self.text
 	for t in self:
 	    text += t.render()
-	return text
+	return text + ' '
 
     def nonempty(self):
 	return self.text or self.children
