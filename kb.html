@@ -1,6 +1,17 @@
-{% extends "base-home.html" %}
+{% extends "base.html" %}
 
 {% block sidebar %}
+    <h3>Search</h3>	
+    <form id="kbsearch" class="searchform" action="/kb" method="get">
+        <p>
+	<input id="kbsearchbox" type="text" name="q"
+	  value="{{search|default:"Search..."}}"
+	  onfocus="if (this.value=='Search...') this.value=''"
+	  />
+	<input class="button" type="submit" value="Search" title="Search" />
+	</p>
+    </form>
+				
     <h3>Categories</h3>
     <ul class='sidemenu'>
 	{% comment %}
@@ -25,30 +36,8 @@
 {% endblock %}
 
 {% block main %}
-    {% block pre_search %}
+    <p>&nbsp;</p>
     <h1>Welcome to the Knowledgebase</h1>
     
     <p>Please enter a search term or choose a category from the list.</p>
-    {% endblock %}
-    
-    <form id="kbsearch" action="/kb" method="get">
-        <p>
-	<label for="search">Search:</label>
-	<input id="kbsearchbox" type="text" name="q"
-	  value="{{search|default:"Search..."}}"
-	  onfocus="if (this.value=='Search...') this.value=''"
-	  />
-	<input class="button" type="submit" value="Search" title="Search" />
-	</p>
-    </form>
-    
-    {% block post_search %}
-    <script type="text/javascript">
-    if (document.getElementById) 
-        c = document.getElementById('kbsearchbox');
-    else
-        c = document.all['kbsearchbox'];
-    c.focus();
-    </script>
-    {% endblock %}
 {% endblock %}

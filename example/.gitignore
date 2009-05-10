@@ -1,3 +1,2 @@
-*.pyc
-*~
-mydb.db
+example.db
+docs/.idmap

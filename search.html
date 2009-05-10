@@ -1,9 +1,9 @@
-{% extends "kb.html" %}
+{% extends "ekb/kb.html" %}
 {% load markup %}
 
 {% block title %}{{title}} - EQL Knowledge{% endblock %}
 
-{% block pre_search %}
+{% block main %}
     <h1>{{title}}</h1>
     
     {% if message %}<p>{{message}}</p>{% endif %}
@@ -28,7 +28,4 @@
         <dd>No matches.</dd>
     {% endif %}
     </dl>
-{% endblock %}
-
-{% block post_search %}
 {% endblock %}

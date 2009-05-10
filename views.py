@@ -1,8 +1,8 @@
 from django.shortcuts import render_to_response
-from django.http import HttpResponsePermanentRedirect
+from django.http import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.utils import html
 import re, datetime, markdown
-from kb.models import Doc, Tag, Word
+from ekb.models import Doc, Tag, Word
 from handy import atoi, join, nicedate, pluralize
 
 class HtmlHighlighter:
@@ -86,6 +86,8 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
     return highlighter.highlight(text, html.escape) + hi
 
+def redirect(req):
+    return HttpResponseRedirect('/kb/')
 
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
@@ -95,8 +97,10 @@ def show(req, search = None):
     dict = {}
     dict['alltags'] = Tag.objects.order_by('name')
     dict['alldocs'] = Doc.objects
-    dict['menuitems'] = [('/index/', 'Home'),
-			 ('/kb/', 'Knowledgebase')]
+    dict['menuitems'] = [
+#	('/index/', 'Home'),
+	('/kb/', 'Knowledgebase'),
+    ]
 
     doc = _try_get(Doc.objects, id=atoi(search))
     if doc: search = qsearch  # the old search was really a docid
@@ -139,7 +143,7 @@ def show(req, search = None):
 	dict['dissimilar'] = doc.dissimilar(max=4)
 	if tag:
 	    dict['search'] = ''
-	return render_to_response('kb/view.html', dict)
+	return render_to_response('ekb/view.html', dict)
     else:
 	# Search for matching articles
 	page = '/kb/%s' % search
@@ -179,11 +183,11 @@ def show(req, search = None):
 	else:
 	    # there is no search term; toplevel index
 	    dict['title'] = 'Knowledgebase'
-	    return render_to_response('kb/kb.html', dict)
+	    return render_to_response('ekb/kb.html', dict)
 
 	dict['docs'] = []
 	for d in f:
 	    d.autosummary = _autosummary(d.expanded_text(), want_words, h)
 	    dict['docs'].append(d)
 		
-	return render_to_response('kb/search.html', dict)
+	return render_to_response('ekb/search.html', dict)

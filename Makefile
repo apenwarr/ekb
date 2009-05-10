@@ -5,7 +5,8 @@ default:
 
 load:
 	cd .. && DJANGO_SETTINGS_MODULE=settings \
-		python -c 'import kb.load; kb.load.load_all("docs")'
+		python -c 'import ekb.load; ekb.load.load_all("docs")'
 
 clean::
 	find -name '*.pyc' -o -name '*~' | xargs rm -fv
+	rm -f example/example.db

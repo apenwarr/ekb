@@ -1,6 +1,6 @@
 import sys, os, time, datetime, re
 from django.db import transaction
-from models import Doc, Tag, Word, WordWeight, RelatedWeight
+from ekb.models import Doc, Tag, Word, WordWeight, RelatedWeight
 from handy import join
 
 _fromtimestamp = datetime.datetime.fromtimestamp
