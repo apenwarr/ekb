@@ -111,9 +111,9 @@ class TreeHandler(xml.sax.ContentHandler):
 	    e.children = []
 
 	# empty text nodes are boring
-	e.children = filter(lambda c: (c.name not in ['', 'p']
-				       or c.children
-				       or c.text.strip()),
+	e.children = filter(lambda c: (c.name not in ['', 'p', 'note']
+				       or c.text.strip()
+				       or c.subtext().strip()),
 			    e.children)
 
     def characters(self, chars):
