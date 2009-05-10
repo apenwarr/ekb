@@ -55,7 +55,7 @@ class Node:
 	elif self.name == 'note':
 	    st = self.subtext()
 	    if st:
-		return "\n\n> Note: %s\n\n" % indent(st, '> ')
+		return "\n\n> **Note:** %s\n\n" % indent(st, '> ')
 	    else:
 		return ''
 	elif self.name in ['uicontrol', 'wintitle', 'userinput',
