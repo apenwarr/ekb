@@ -71,18 +71,23 @@ class Node:
 	    return "\n\n%s\n\n" % self.subtext()
 	elif self.name in ['fig', 'image']:
 	    return ''   # FIXME
+	elif self.name == 'substeps':
+	    return process_list(self, "substep", "- ")
+	elif self.name == 'choices':
+	    return process_list(self, "choice", "- ")
 	elif self.name == 'sl':
 	    return process_list(self, "sli", "- ")
 	elif self.name == 'ul':
 	    return process_list(self, "li", "- ")
-	elif self.name in ['cmd', 'stepresult', 'info', 'tutorialinfo']:
+	elif self.name in ['cmd', 'stepresult', 'info', 'tutorialinfo',
+			   'li', 'sli', 'step', 'substep', 'choice']:
 	    return self.subtext()
 	else:
 	    die(self)
 	die(self)
 
     def subtext(self):
-	text = self.text
+	text = clean(self.text)
 	for t in self:
 	    text += t.render()
 	return text + ' '
@@ -144,20 +149,9 @@ def process_list(steps, itemname, prefix):
     for step in steps:
 	if not step.name == itemname:
 	    die(step)
-	t = []
-	if step.text:
-	    t.append(step.text)
-	for bit in step:
-	    if bit.name == 'substeps':
-		e = process_list(bit, "substep", "- ")
-	    elif bit.name == 'choices':
-		e = process_list(bit, "choice", "- ")
-	    else:
-		e = bit.render()
-	    if e.strip():
-		t.append(e)
+	t = step.render().strip()
 	if t:
-	    out.append("\n%s%s" % (prefix, indent(join("\n", t), '    ')))
+	    out.append("\n%s%s" % (prefix, indent(t, '    ')))
     return join("\n", out)
     
 
@@ -217,7 +211,6 @@ def process(filename):
 	if sub.name == 'task':
 	    print_node(sub)
 	    pt = process_task(sub, filename)
-	    print pt
 	    if pt:
 		open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
 	else:
