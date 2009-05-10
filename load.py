@@ -55,6 +55,7 @@ def _load_docs(topdir):
 	    title = filename
 
 	    f = open(fullpath)
+	    echo("  %s" % fullpath)
 	    line = f.readline()
 	    while line and line.strip():
 		(k,v) = line.split(":", 1)
@@ -69,7 +70,7 @@ def _load_docs(topdir):
 		line = f.readline()
 
 	    tags = filter(None, tags)
-	    print "  %s (tags=%s)" % (fullpath, repr(tags))
+	    print " (tags=%s)" % repr(tags)
 
 	    id = name_to_id.get(filename)
 	    if not id:
