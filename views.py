@@ -119,7 +119,7 @@ def show(req, search = None):
     if tag:
 	h = HtmlHighlighter([], '')
     else:
-	h = HtmlHighlighter(want_words, 'strong')
+	h = HtmlHighlighter(want_words, 'u')
 
     dict['search'] = search
 	

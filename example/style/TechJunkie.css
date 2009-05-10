@@ -41,8 +41,9 @@ h3 {
 /* Paragraph */
 p { padding: 8px 10px;	}
 
-strong {
+u {
     background: #ede8a7;
+    text-decoration: none;
 }
 
 /* Lists */
