@@ -14,17 +14,22 @@ def join(between, l):
     return unicode(between).join([unicode(i) for i in l])
 
 treetop = None
-def _die(n, list, path):
+def _die_find(n, list, path):
     if n == list:
-	raise Exception("%s->[%s]" % (join("->", path), repr(n)))
+	return path
     for i in list:
-	_die(n, i, path + [list.name])
+	p = _die_find(n, i, path + [list.name])
+	if p:
+	    return p
     
 def die(n):
     if not treetop:
 	raise Exception('treetop not set')
-    _die(n, treetop, [])
-    raise Exception('node not found: %s' % repr(n))
+    path = _die_find(n, treetop, [])
+    if path:
+	raise Exception("%s->[%s]" % (join("->", path), repr(n)))
+    else:
+	raise Exception('node not found: %s' % repr(n))
 
 def indent(s, prefix):
     s = s.lstrip()
