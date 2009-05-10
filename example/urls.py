@@ -6,6 +6,8 @@ urlpatterns = patterns('',
     # this could be your main company home page; for now, we just redirect to /kb
     (r'^index$|^index/$|^$', ekb.views.redirect),
 
+    (r'^kb/(?P<id>\d+)(/.+)?\.pdf$',
+     ekb.views.pdf),
     (r'^kb/(?P<search>[^/]*)(/.*)?$',
      ekb.views.show),
 

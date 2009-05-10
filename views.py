@@ -1,7 +1,11 @@
 from django.shortcuts import render_to_response
-from django.http import HttpResponseRedirect, HttpResponsePermanentRedirect
+from django.http import HttpResponse, Http404, \
+	HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.utils import html
-import re, datetime, markdown
+from tempfile import NamedTemporaryFile
+from subprocess import Popen, PIPE
+from os.path import dirname
+import os, re, datetime, markdown
 from ekb.models import Doc, Tag, Word
 from handy import atoi, join, nicedate, pluralize
 
@@ -88,6 +92,38 @@ def _autosummary(text, want_words, highlighter, width = 120):
 
 def redirect(req):
     return HttpResponseRedirect('/kb/')
+
+def pdf(req, id):
+    docid = atoi(id)
+    doc = _try_get(Doc.objects, id=docid)
+    if not doc:
+	raise Http404("Document #%d (%s) does not exist." % (docid, id))
+    else:
+	mdf = NamedTemporaryFile()
+	mdf.write(doc.expanded_text().encode('utf-8'))
+	mdf.flush()
+
+	p = Popen(args = ['pandoc',
+			  '-f', 'markdown',
+			  '-t', 'latex',
+			  mdf.name],
+		  stdout=PIPE)
+	ltname = mdf.name + '.latex'
+	pdname = mdf.name + '.pdf'
+	ltf = open(ltname, 'w')
+	ltf.write(open("ekb/latex.header").read())
+	ltf.write(p.stdout.read())
+	ltf.write(open("ekb/latex.footer").read())
+	ltf.flush()
+	p.wait()
+	mdf.close()
+	p = Popen(args = ['pdflatex', '-interaction', 'batchmode', ltname],
+		  cwd = dirname(ltname))
+	p.wait()
+	pd = open(pdname)
+	os.unlink(pdname)
+	os.unlink(ltname)
+	return HttpResponse(pd, "application/pdf")
 
 def show(req, search = None):
     qsearch = req.REQUEST.get('q', '')
