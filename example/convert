@@ -1,0 +1,11 @@
+#!/bin/bash -x
+set -e
+(
+	cat header
+	pandoc -f markdown -t latex \
+		docs/Tasks/Tk-MultipleItemsPerAppEntering.xml.txt
+	cat footer
+) >test.latex
+pdflatex test.latex
+cp test.pdf /media/psf/Home/test.pdf
+ssh mean open test.pdf
