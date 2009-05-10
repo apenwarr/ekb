@@ -11,8 +11,9 @@
         | Filed under
 	{% for tag in tags %}
             <a href="/kb/{{tag.name}}">{{tag.name}}</a
-	    >{% if forloop.last %}.{% else %},{% endif %}
+	    >{% if not forloop.last %},{% endif %}
 	{% endfor %}
+	|&nbsp;<a href="{{pdfurl}}">Printable</a>
     {% endif %}
     </p>
 

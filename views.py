@@ -173,6 +173,7 @@ def show(req, search = None):
 	dict['title'] = doc.title
 	dict['when'] = nicedate(datetime.datetime.now() - doc.last_modified)
 	dict['tags'] = doc.tags.all()
+	dict['pdfurl'] = doc.get_url() + ".pdf"
 	dict['text'] = h.highlight(doc.expanded_text(headerdepth=3),
 				   markdown.markdown)
 	dict['similar'] = doc.similar(max=4)
