@@ -82,11 +82,19 @@ class Node:
 	    return process_list(self, "choice", "- ")
 	elif self.name == 'sl':
 	    return process_list(self, "sli", "- ")
+	elif self.name == 'dl':
+	    return process_list(self, "dlentry", "- ")
 	elif self.name == 'ul':
 	    return process_list(self, "li", "- ")
 	elif self.name in ['cmd', 'stepresult', 'info', 'tutorialinfo',
-			   'li', 'sli', 'step', 'substep', 'choice']:
+			   'li', 'sli', 'step', 'substep', 'choice',
+			   'dlentry']:
 	    return self.subtext()
+	elif self.name == 'section':
+	    return '\n\n# Section!\n\n%s' % self.subtext()
+	elif self.name in ['title', 'dt', 'dd']:
+	    # FIXME
+	    return '%s(%s)' % (self.name, self.subtext())
 	else:
 	    die(self)
 	die(self)
@@ -152,6 +160,8 @@ def print_node(n, indent = 0):
 def process_list(steps, itemname, prefix):
     out = []
     for step in steps:
+	if step.name == 'dlhead':
+	    continue  # FIXME
 	if not step.name == itemname:
 	    die(step)
 	t = step.render().strip()
@@ -167,7 +177,7 @@ def process_task(task, filename):
     for t in task:
 	if t.name in ['title', 'shortdesc']:
 	    title = t.subtext()
-	elif t.name == 'taskbody':
+	elif t.name in ['taskbody']:
 	    for tb in t:
 		if tb.name == 'prereq':
 		    if tb.nonempty():
@@ -195,6 +205,8 @@ def process_task(task, filename):
 			    body.append(st)
 		else:
 		    die(tb)
+	elif t.name == 'body':
+	    body.append(t.subtext())
 	elif t.name == 'reference':
 	    pass  # FIXME
 	elif t.name == 'related-links':
@@ -212,14 +224,18 @@ def process(filename):
     tree = xml_to_tree(filename)
     global treetop
     treetop = tree
-    for sub in tree.children:
-	if sub.name == 'task':
-	    print_node(sub)
+    print_node(tree)
+    for sub in tree:
+	pt = None
+	if sub.name in ['task', 'topic']:
 	    pt = process_task(sub, filename)
-	    if pt:
-		open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
+	if pt:
+	    print pt.encode('utf-8')
+	    open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
 	else:
-	    print_node(sub)
+	    print 'Skipping %s' % filename
 
 for name in sys.argv[1:]:
     process(name)
+
+print 'done'
