@@ -18,11 +18,7 @@ urlpatterns = patterns('',
     (r'^admin/(.*)', admin.site.root),
     
     # WARNING: development only, insecure!
-    (r'(?P<path>.*/media/.*)$', 'django.views.static.serve',
-            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
-    (r'(?P<path>.*/images/.*)$', 'django.views.static.serve',
-            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
-    (r'(?P<path>.*/styles/.*)$', 'django.views.static.serve',
+    (r'(style/.*)$', 'django.views.static.serve',
             {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
             
 )
