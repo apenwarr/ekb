@@ -26,8 +26,9 @@ def die(n):
     _die(n, treetop, [])
     raise Exception('node not found: %s' % repr(n))
 
-def indent(s, n):
-    return re.sub(re.compile(r'^', re.M), ' '*n, s).strip()
+def indent(s, prefix):
+    s = s.lstrip()
+    return re.sub("\n", "\n" + prefix, s).strip()
 
 class Node:
     def __init__(self, name, attrs = {}, text = ''):
@@ -54,7 +55,7 @@ class Node:
 	elif self.name == 'note':
 	    st = self.subtext()
 	    if st:
-		return "\n\nNote:\n\n- %s\n\n" % indent(st, 2)
+		return "\n\n> Note: %s\n\n" % indent(st, '> ')
 	    else:
 		return ''
 	elif self.name in ['uicontrol', 'wintitle', 'userinput',
@@ -156,7 +157,7 @@ def process_list(steps, itemname, prefix):
 	    if e.strip():
 		t.append(e)
 	if t:
-	    out.append("\n%s%s" % (prefix, indent(join("\n", t), 4)))
+	    out.append("\n%s%s" % (prefix, indent(join("\n", t), '    ')))
     return join("\n", out)
     
 
@@ -179,7 +180,7 @@ def process_task(task, filename):
 		    if tb.nonempty():
 			st = tb.subtext()
 			if st:
-			    #body.append('# Context')
+			    body.append('# Context')
 			    body.append(st)
 		elif tb.name == 'steps':
 		    if tb.nonempty():
