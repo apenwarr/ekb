@@ -3,8 +3,10 @@ import os, sys
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + '/..'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-print sys.path
+
+if len(sys.argv) != 2:
+    sys.stderr.write("Usage: %s <document-dir>\n" % sys.argv[0])
+    exit(1)
 
 import ekb.load
-for d in sys.argv[1:]:
-    ekb.load.load_all(d)
+ekb.load.load_all(sys.argv[1])

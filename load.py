@@ -9,7 +9,12 @@ def echo(s):
     sys.stdout.write(s)
     sys.stdout.flush()
 
-def _flush_and_load(topdir):
+def flush():
+    print 'deleting all'
+    Tag.objects.all().delete()
+    Doc.objects.all().delete()
+
+def _load_docs(topdir):
     seen = {}
     id_seen = {}
     name_to_id = {}
@@ -32,10 +37,6 @@ def _flush_and_load(topdir):
 	    nextid = max(id+1, nextid)
     idfile = open(idfilename, "a")
     
-    print 'deleting all'
-    Tag.objects.all().delete()
-    Doc.objects.all().delete()
-
     print 'loading all from "%s"' % topdir
     titlemap = {}
     for (dirpath, dirnames, filenames) in os.walk(topdir):
@@ -161,7 +162,8 @@ def _calc_related_matrix():
 def load_all(topdir):
     transaction.enter_transaction_management()
     transaction.managed()
-    _flush_and_load(topdir)
+    flush()
+    _load_docs(topdir)
     _calc_word_frequencies()
     _calc_related_matrix()
     print 'Committing'

@@ -1,11 +1,7 @@
 
 default:
-	@echo 'Try: make load'
+	@echo 'Try: make clean'
 	@false
-
-load:
-	cd .. && DJANGO_SETTINGS_MODULE=settings \
-		python -c 'import ekb.load; ekb.load.load_all("docs")'
 
 clean::
 	find -name '*.pyc' -o -name '*~' | xargs rm -fv
