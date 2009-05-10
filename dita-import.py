@@ -112,6 +112,7 @@ class TreeHandler(xml.sax.ContentHandler):
 
 	# empty text nodes are boring
 	e.children = filter(lambda c: (c.name not in ['', 'p']
+				       or c.children
 				       or c.text.strip()),
 			    e.children)
 
