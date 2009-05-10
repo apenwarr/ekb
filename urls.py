@@ -6,10 +6,9 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Example:
-    # (r'^testy/', include('testy.foo.urls')),
-    
-    (r'^appy/$', 'testy.appy.views.index'),
+    (r'^techjunkie/$', 'techjunkie.views.index'),
+    (r'^techjunkie/index.html$', 'techjunkie.views.index'),
+    (r'^techjunkie/style.html$', 'techjunkie.views.style'),
 
     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
     # to INSTALLED_APPS to enable admin documentation:
@@ -20,6 +19,10 @@ urlpatterns = patterns('',
     
     # WARNING: development only, insecure!
     (r'(?P<path>.*/media/.*)$', 'django.views.static.serve',
+            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
+    (r'(?P<path>.*/images/.*)$', 'django.views.static.serve',
+            {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
+    (r'(?P<path>.*/styles/.*)$', 'django.views.static.serve',
             {'document_root': settings.MEDIA_ROOT, 'show_indexes': True}),
             
 )
