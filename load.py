@@ -8,10 +8,6 @@ def echo(s):
     sys.stdout.flush()
 
 def _load_docs(topdir):
-    print 'deleting all'
-    Tag.objects.all().delete()
-    Doc.objects.all().delete()
-
     seen = {}
     id_seen = {}
     name_to_id = {}
@@ -77,6 +73,15 @@ def _load_docs(topdir):
 	    for tname in tags:
 		(t, created) = Tag.objects.get_or_create(name=tname)
 		d.tags.add(t)
+
+    for doc in Doc.objects.all():
+	if not os.path.exists(topdir + doc.pathname):
+	    print 'Deleting old document: %s' % doc.filename
+	    doc.delete()
+    for tag in Tag.objects.all():
+	if not tag.doc_set.count():
+	    print 'Deleting old tag: %s' % tag.name
+	    tag.delete()
 
 def _calc_word_frequencies():
     print 'deleting all wordweights'
