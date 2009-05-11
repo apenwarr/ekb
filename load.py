@@ -1,9 +1,7 @@
-import sys, os, time, datetime, re
+import sys, os, re
 from django.db import transaction
-from ekb.models import Doc, Tag, Word, WordWeight, RelatedWeight
+from ekb.models import parse_doc, Doc, Tag, Word, WordWeight, RelatedWeight
 from handy import join
-
-_fromtimestamp = datetime.datetime.fromtimestamp
 
 def echo(s):
     sys.stdout.write(s)
@@ -41,53 +39,40 @@ def _load_docs(topdir):
     titlemap = {}
     for (dirpath, dirnames, filenames) in os.walk(topdir):
 	assert(dirpath.startswith(topdir))
-	for filename in filenames:
-	    tags = dirpath[len(topdir):].split("/")
-	    if (filename[-1] == '~' or filename[0] == '.'
-	        or filename=='Makefile'):
+	for basename in filenames:
+	    fullpath = os.path.join(dirpath, basename)
+	    dirfile = fullpath[len(topdir):]
+	    if (basename[-1] == '~' or basename[0] == '.'
+	        or basename=='Makefile'):
 		   continue
-
-	    if filename in seen:
-		raise KeyError('Duplicate filename "%s"' % filename)
-	    seen[filename] = 1
-		
-	    fullpath = os.path.join(dirpath, filename)
-	    title = filename
-
-	    f = open(fullpath)
 	    echo("  %s" % fullpath)
-	    line = f.readline()
-	    while line and line.strip():
-		(k,v) = line.split(":", 1)
-		if k.lower() == 'title':
-		    title = v.strip()
-		elif k.lower() == 'tags':
-		    for t in v.split(','):
-			if not t in tags:
-			    tags.append(t.strip())
-		else:
-		    raise KeyError('Unknown header: "%s"' % k)
-		line = f.readline()
 
-	    tags = filter(None, tags)
+	    if basename in seen:
+		raise KeyError('Duplicate basename "%s"' % basename)
+	    seen[basename] = 1
+		
+	    title = basename
+
+	    (title, tags, mtime, text) = parse_doc(topdir, dirfile)
+
 	    print " (tags=%s)" % repr(tags)
 
-	    id = name_to_id.get(filename)
+	    id = name_to_id.get(basename)
 	    if not id:
 		id = nextid
-		idfile.write("%d %s\n" % (id, filename))
+		idfile.write("%d %s\n" % (id, basename))
 	    nextid = max(id+1, nextid)
 
 	    while title in titlemap:
 		print ('WARNING: Duplicate title:\n  "%s"\n  "%s"'
-		       % (filename, titlemap[title].filename))
+		       % (basename, titlemap[title].filename))
 		title += " [duplicate]"
 		
 	    d = Doc(id = id,
-		    filename = filename,
-		    pathname = os.path.join(dirpath[len(topdir):], filename),
+		    filename = basename,
+		    pathname = dirfile,
 		    title = title,
-		    last_modified = _fromtimestamp(os.stat(fullpath)[8]))
+		    last_modified = mtime)
 	    titlemap[title] = d
 	    d.save()
 	    for tname in tags:

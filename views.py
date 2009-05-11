@@ -161,6 +161,7 @@ def show(req, search = None):
 	
     if doc:
 	# View the specific article they requested.
+	doc.read_latest()
 	pagebase = doc.get_url()
 	page = pagebase + dict.get('urlappend', '')
 	if req.path != pagebase:

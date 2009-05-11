@@ -1,6 +1,6 @@
 from settings import DEBUG
 from django.db import models
-import re
+import re, os, datetime
 
 class Tag(models.Model):
     name = models.CharField(max_length=200, db_index=True, unique=True)
@@ -8,6 +8,28 @@ class Tag(models.Model):
 class Word(models.Model):
     name = models.CharField(max_length=40, db_index=True, unique=True)
     total = models.IntegerField()
+
+def parse_doc(topdir, dirfile):
+    fullpath = topdir + dirfile
+    tags = os.path.dirname(dirfile).split("/")
+    title = os.path.basename(dirfile)
+	    
+    f = open(fullpath)
+    line = f.readline()
+    while line and line.strip():
+	(k,v) = line.split(":", 1)
+	if k.lower() == 'title':
+	    title = v.strip()
+	elif k.lower() == 'tags':
+	    for t in v.split(','):
+		if not t in tags:
+		    tags.append(t.strip())
+	else:
+	    raise KeyError('Unknown header: "%s"' % k)
+	line = f.readline()
+    tags = filter(None, tags)
+    mtime = datetime.datetime.fromtimestamp(os.stat(fullpath)[8])
+    return (title, tags, mtime, f.read().decode('utf-8'))
 
 _includes_in_progress = {}
 class Doc(models.Model):
@@ -29,6 +51,17 @@ class Doc(models.Model):
     def get_url(self):
 	return "/kb/%d/%s" % (self.id, re.sub(r"\..*$", "", self.filename))
 	#return "/kb/%d" % self.id
+
+    _text = None
+    def read_latest(self):
+	(self.title, tags, self.last_modified, self._text) \
+		= parse_doc('docs', self.pathname)
+	for tname in tags:
+	    (t, created) = Tag.objects.get_or_create(name=tname)
+	    self.tags.add(t)
+	for t in list(self.tags.all()):
+	    if not t.name in tags:
+		self.tags.remove(t)
 
     def _try_include(self, indent, filename, isfaq):
 	indent = indent and int(indent) or 0
@@ -66,10 +99,9 @@ class Doc(models.Model):
 	return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
     def text(self):
-	f = open('docs/%s' % self.pathname)
-	while f.readline().strip() != '':
-	    pass
-	return f.read().decode('utf-8')
+	if not self._text:
+	    self.read_latest()
+	return self._text
 
     def expanded_text(self, headerdepth=1):
 	text = self._process_includes(self.text(), depth=headerdepth)
