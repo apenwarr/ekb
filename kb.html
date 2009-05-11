@@ -20,8 +20,10 @@
 	      article{{alldocs.count|pluralize}}</span></a></li>
 	{% endcomment %}
         {% for tag in alltags.all %}
+	    {% if tag.doc_set.count %}
             <li><a href="/kb/{{tag.name}}">{{tag.name}} ({{tag.doc_set.count}})
 	      </a></li>
+	    {% endif %}
 	{% endfor %}
     </ul>
     
