@@ -9,4 +9,4 @@ if len(sys.argv) != 2:
     exit(1)
 
 import ekb.load
-ekb.load.load_docs(sys.argv[1])
+ekb.load.index_docs(sys.argv[1])

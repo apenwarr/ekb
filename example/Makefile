@@ -5,6 +5,7 @@ default:
 load:
 	./manage.py syncdb
 	ekb/load docs
+	ekb/index docs
 
 run: load
 	./manage.py runserver 0.0.0.0:8000

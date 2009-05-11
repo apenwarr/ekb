@@ -7,12 +7,11 @@ def echo(s):
     sys.stdout.write(s)
     sys.stdout.flush()
 
-def flush():
+def _load_docs(topdir):
     print 'deleting all'
     Tag.objects.all().delete()
     Doc.objects.all().delete()
 
-def _load_docs(topdir):
     seen = {}
     id_seen = {}
     name_to_id = {}
@@ -80,6 +79,7 @@ def _load_docs(topdir):
 		d.tags.add(t)
 
 def _calc_word_frequencies():
+    print 'deleting all wordweights'
     Word.objects.all().delete()
     WordWeight.objects.all().delete()
     
@@ -115,6 +115,9 @@ def _calc_word_frequencies():
 	word.save()
 
 def _calc_related_matrix():
+    print 'deleting all relatedweights'
+    RelatedWeight.objects.all().delete()
+    
     print 'Reading word weights'
     docs = list(Doc.objects.all())
     docwords = {}
@@ -145,11 +148,16 @@ def _calc_related_matrix():
 	    RelatedWeight.objects.create(parent=doc, doc=doc2, weight=weight)
 	    #print '  %s: %f' % (doc2.filename, weight)
 
-def load_all(topdir):
+def load_docs(topdir):
     transaction.enter_transaction_management()
     transaction.managed()
-    flush()
     _load_docs(topdir)
+    print 'Committing'
+    transaction.commit()
+
+def index_docs(topdir):
+    transaction.enter_transaction_management()
+    transaction.managed()
     _calc_word_frequencies()
     _calc_related_matrix()
     print 'Committing'
