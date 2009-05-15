@@ -5,7 +5,7 @@
 
 {% block main %}
     <h2>{{title}}</h2>
-    <p class="post-info">Last changed <b>{{when}}</b>
+    <p class="post-info">Updated <b>{{when}}</b>
 
     {% if tags %}
         | Filed under
@@ -13,7 +13,7 @@
             <a href="/kb/{{tag.name}}">{{tag.name}}</a
 	    >{% if not forloop.last %},{% endif %}
 	{% endfor %}
-	|&nbsp;<a href="{{pdfurl}}">Printable</a>
+	|&nbsp;<a href="{{pdfurl}}">PDF</a>
     {% endif %}
     </p>
 

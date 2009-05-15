@@ -1,3 +1,5 @@
+import datetime
+
 def join(between, list):
     if list != None:
 	return unicode(between).join([unicode(i) for i in list])
@@ -13,25 +15,23 @@ def atoi(s):
 	return 0
 
 
-def nicedate(diff):
-    ''' Return a string representing the datediff "diff".
-        "diff" should be produced by subtracting two datetime.datetime
-	objects.
-    '''
+def nicedate(d1):
+    d2 = datetime.datetime.now()
+    diff = d2 - d1
     days = diff.days
     secs = diff.seconds
     if secs < 0 or days < 0:
 	return 'in the future'
-    elif days >= 30:
-	return '%s month%s ago' % (days/30, pluralize(days))
+    elif days >= 14:
+	return d1.strftime('%Y-%m-%d')
     elif days >= 1:
 	return '%s day%s ago' % (days, pluralize(days))
     elif secs >= 60*60:
-	return '%s hour%s ago' % (secs/60/60, pluralize(secs/60/60))
+	return 'today'
     elif secs >= 60:
-	return '%s minute%s ago' % (secs/60, pluralize(secs/60))
+	return 'minutes ago'
     else:
-	return '%s second%s ago' % (secs, pluralize(secs))
+	return 'seconds ago'
 
 
 def pluralize(n, suffix = 's'):
