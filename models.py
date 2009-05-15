@@ -52,15 +52,22 @@ class Doc(models.Model):
 	return "/kb/%d/%s" % (self.id, re.sub(r"\..*$", "", self.filename))
 	#return "/kb/%d" % self.id
 
+    _title = None
+    _tags = None
     _text = None
     def read_latest(self):
-	(self.title, tags, self.last_modified, self._text) \
+	(self._title, self._tags, self.last_modified, self._text) \
 		= parse_doc('docs', self.pathname)
-	for tname in tags:
+
+    def use_latest(self):
+	if not self._text:
+	    self.read_latest()
+	self.title = self._title
+	for tname in self._tags:
 	    (t, created) = Tag.objects.get_or_create(name=tname)
 	    self.tags.add(t)
 	for t in list(self.tags.all()):
-	    if not t.name in tags:
+	    if not t.name in self._tags:
 		self.tags.remove(t)
 
     def _try_include(self, indent, filename, isfaq):
