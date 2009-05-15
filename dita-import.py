@@ -294,10 +294,10 @@ def process(filename):
     pt = parse_element(tree)
     pt.dump('')
     print "--------------------\n"
-    
-    if pt:
-	title = pt.steal_title()
-	text = pt.render(0).strip()
+
+    title = pt.steal_title()
+    text = pt.render(0).strip()
+    if text:
 	if title:
 	    text = "title: %s\n\n%s\n" % (title, text)
 	else:
