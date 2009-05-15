@@ -169,7 +169,7 @@ class Block(Span):
 	t = re.sub("\n", "\n%s" % self.lineprefix, t)
 	if not raw:
 	    t = re.sub(r'^\s+|\s+$', '', t)
-	return "\n%s\n" % t
+	return "\n\n%s\n" % t
 
 
 class List(Span):
@@ -236,12 +236,23 @@ def parse_element(n):
     if isinstance(n, TextXmlNode):
 	return Literal(n.text)
     elif n.name in ['root', 'task', 'taskbody',
-		    'conbody', 'concept', 'section']:
+		    'concept', 'conbody', 'section',
+		    'topic', 'body']:
 	return Section(_title(n), _subs(n))
     elif n.name in ['postreq', 'prereq', 'context']:
 	return Section(n.name, _subs(n))
     elif n.name in ['choices', 'substeps', 'sl', 'ul', 'steps-unordered']:
 	return List('\n- ', '    ', _subs(n))
+    elif n.name in ['dl']:
+	# FIXME: definition lists
+	return List('\n- ', '    ', _subs(n))
+    elif n.name in ['dlhead', 'ddhd', 'dlentry']:
+	# FIXME: handle terms and definitions separately
+	return Block('', _subs(n))
+    elif n.name in ['dt']:
+	return Span([Literal('**')] + _subs(n) + [Literal(':** ')])
+    elif n.name in ['dd']:
+	return Span(_subs(n))
     elif n.name in ['steps']:
 	return List('\n1. ', '    ', _subs(n))
     elif n.name in ['step', 'p', 'cmd', 'stepresult', 'choice', 'stepxmp',
@@ -249,13 +260,13 @@ def parse_element(n):
 	# FIXME: maybe treat some of these specially
 	return Block('', _subs(n))
     elif n.name in ['note']:
-	return Block('> ', [Literal('> **Note:**')] + _subs(n))
+	return Block('> ', [Literal('> **Note:** ')] + _subs(n))
     elif n.name in ['info']:
 	#return Block('', [Literal('<i>')] + _subs(n) + [Literal('</i>')])
 	return Block('', _subs(n))
-    elif n.name in ['uicontrol', 'wintitle', 'b', 'filepath', 'userinput']:
+    elif n.name in ['uicontrol', 'wintitle', 'b', 'userinput']:
 	return Span([Literal('**')] + _subs(n) + [Literal('**')])
-    elif n.name in ['i', 'fn']:
+    elif n.name in ['i', 'fn', 'filepath']:
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
 	return Literal('')  # already handled this in _title() earlier
@@ -268,6 +279,9 @@ def parse_element(n):
 
 
 def process(filename):
+    print "\n===================="
+    print 'file: %s' % filename
+    
     tree = xml_to_tree(filename)
     global treetop
     treetop = tree
