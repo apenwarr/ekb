@@ -42,6 +42,9 @@ class XmlNode:
     def add(self, child):
 	self.children.append(child)
 
+    def subtext(self):
+	return join('', [i.subtext() for i in self])
+
 
 class TextXmlNode(XmlNode):
     def __init__(self, text):
@@ -50,6 +53,9 @@ class TextXmlNode(XmlNode):
 
     def __repr__(self):
 	return repr(self.text)
+
+    def subtext(self):
+	return self.text
     
 
 class TreeHandler(xml.sax.ContentHandler):
@@ -100,14 +106,13 @@ class Element:
 	pass
 
     def __repr__(self):
-	print 'representing(%s)' % self.__class__.__name__
 	return "%s(%s)" % (self.__class__.__name__, repr(self.render(1)))
 
     def dump(self, indent):
 	print indent + self.__class__.__name__
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	return ""
 
 
@@ -121,7 +126,7 @@ class Literal(Element):
 	print "%s    %s" % (indent, repr(self.text))
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	if raw:
 	    return self.text
 	else:
@@ -133,7 +138,6 @@ class Span(Element):
 	Element.__init__(self)
 	assert(isinstance(items, list))
 	for i in items:
-	    print i
 	    assert(isinstance(i, Element))
 	self.items = items
 
@@ -146,7 +150,7 @@ class Span(Element):
 	return item.render(raw)
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	out = []
 	for i in self.items:
 	    out.append(self.render_item(i, raw))
@@ -160,7 +164,7 @@ class Block(Span):
 	self.lineprefix = lineprefix
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	t = Span.render(self, raw)
 	t = re.sub("\n", "\n%s" % self.lineprefix, t)
 	if not raw:
@@ -186,7 +190,7 @@ class List(Span):
 	    return ''
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	t = Span.render(self, raw)
 	if not raw:
 	    t = re.sub(r'^\s+|\s+$', '', t)
@@ -196,26 +200,43 @@ class List(Span):
 class Section(Block):
     def __init__(self, title, items):
 	Block.__init__(self, '', items)
-	assert(isinstance(title, basestring))
+	assert(title is None or isinstance(title, basestring))
 	self.title = title
 
     def render(self, raw):
-	print 'rendering(%s)' % self.__class__.__name__
+	#print 'rendering(%s)' % self.__class__.__name__
 	t = Block.render(self, raw)
-	t = re.sub(re.compile("^#", re.M), "##", t)
-	return "\n# %s\n%s" % (self.title, t)
+	if self.title:
+	    t = re.sub(re.compile("^#", re.M), "##", t)
+	    return "\n# %s\n%s" % (self.title, t)
+	else:
+	    return t
+
+    def steal_title(self):
+	if not self.title:
+	    for i in self.items:
+		if isinstance(i, Section):
+		    self.title = i.steal_title()
+	t = self.title
+	self.title = None
+	return t
 
 
 def _subs(n):
     return list([parse_element(sub) for sub in n])
 
+def _title(top):
+    for n in top:
+	if n.name == 'title':
+	    return n.subtext()
+
 def parse_element(n):
-    print 'pe(%s)' % n
+    #print 'pe(%s)' % n
     assert(isinstance(n, XmlNode))
     if isinstance(n, TextXmlNode):
 	return Literal(n.text)
     elif n.name in ['root', 'task', 'taskbody', 'postreq', 'prereq']:
-	return Section('Section (%s)' % n.name, _subs(n))
+	return Section(_title(n), _subs(n))
     elif n.name in ['steps']:
 	return List('\n1. ', '    ', _subs(n))
     elif n.name in ['step', 'p', 'cmd', 'stepresult']:
@@ -245,9 +266,14 @@ def process(filename):
     pt.dump('')
     print "--------------------\n"
     
-    print repr(pt)
     if pt:
-	enc = pt.render(0).encode('utf-8')
+	title = pt.steal_title()
+	text = pt.render(0).strip()
+	if title:
+	    text = "title: %s\n\n%s\n" % (title, text)
+	else:
+	    text = "\n%s\n" % text
+	enc = text.encode('utf-8')
 	print enc
 	open("%s.txt" % filename, "w").write(enc)
     else:
