@@ -7,5 +7,7 @@
 \usepackage{enumerate}
 
 \setcounter{secnumdepth}{0}
-\author{}
+\title{%title%}
+\author{Knowledgebase article #%id%}
 \begin{document}
+\maketitle

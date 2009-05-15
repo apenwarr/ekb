@@ -93,6 +93,13 @@ def _autosummary(text, want_words, highlighter, width = 120):
 def redirect(req):
     return HttpResponseRedirect('/kb/')
 
+def _subfile(filename, doc):
+    t = open(filename).read().decode('utf-8')
+    print t
+    t = re.sub('%id%', str(doc.id), t)
+    t = re.sub('%title%', doc.title, t)
+    return t.encode('utf-8')
+
 def pdf(req, id):
     docid = atoi(id)
     doc = _try_get(Doc.objects, id=docid)
@@ -111,9 +118,9 @@ def pdf(req, id):
 	ltname = mdf.name + '.latex'
 	pdname = mdf.name + '.pdf'
 	ltf = open(ltname, 'w')
-	ltf.write(open("ekb/latex.header").read())
+	ltf.write(_subfile("ekb/latex.header", doc))
 	ltf.write(p.stdout.read())
-	ltf.write(open("ekb/latex.footer").read())
+	ltf.write(_subfile("ekb/latex.footer", doc))
 	ltf.flush()
 	p.wait()
 	mdf.close()
