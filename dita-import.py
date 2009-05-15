@@ -246,14 +246,14 @@ def parse_element(n):
     elif n.name in ['dl']:
 	# FIXME: definition lists
 	return List('\n- ', '    ', _subs(n))
-    elif n.name in ['dlhead', 'ddhd', 'dlentry']:
+    elif n.name in ['dlhead', 'dthd', 'ddhd', 'dlentry']:
 	# FIXME: handle terms and definitions separately
 	return Block('', _subs(n))
     elif n.name in ['dt']:
 	return Span([Literal('**')] + _subs(n) + [Literal(':** ')])
     elif n.name in ['dd']:
 	return Span(_subs(n))
-    elif n.name in ['steps']:
+    elif n.name in ['steps', 'ol']:
 	return List('\n1. ', '    ', _subs(n))
     elif n.name in ['step', 'p', 'cmd', 'stepresult', 'choice', 'stepxmp',
 		    'substep', 'shortdesc', 'sli', 'tutorialinfo', 'li']:
@@ -261,6 +261,8 @@ def parse_element(n):
 	return Block('', _subs(n))
     elif n.name in ['note']:
 	return Block('> ', [Literal('> **Note:** ')] + _subs(n))
+    elif n.name in ['lines']:
+	return Block('    ', [Literal('    ')] + _subs(n))
     elif n.name in ['info']:
 	#return Block('', [Literal('<i>')] + _subs(n) + [Literal('</i>')])
 	return Block('', _subs(n))
@@ -271,7 +273,7 @@ def parse_element(n):
     elif n.name in ['title']:
 	return Literal('')  # already handled this in _title() earlier
     elif n.name in ['fig', 'reference', 'image', 'draft-comment',
-		    'related-links']:
+		    'related-links', 'fm-ditafile', 'dita', 'indexterm']:
 	# FIXME
 	return Literal('')
     else:

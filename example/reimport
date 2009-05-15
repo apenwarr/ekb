@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 rm -f xml/*.txt
-python ekb/dita-import.py xml/Tk-*.xml
-python ekb/dita-import.py xml/Tp-*.xml
+#python ekb/dita-import.py xml/Tk-*.xml
+#python ekb/dita-import.py xml/Tp-*.xml
+python ekb/dita-import.py xml/*.xml
 rm -rf docs/Tasks
 mkdir docs/Tasks
 cp xml/*.xml.txt docs/Tasks/
