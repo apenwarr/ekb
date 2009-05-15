@@ -62,11 +62,14 @@ class TreeHandler(xml.sax.ContentHandler):
 	e = XmlNode(name, attrs = attrs)
 	self.stack[-1].add(e)
 	self.stack.append(e)
+	#print 'se(%s)' % repr(name)
 
     def endElement(self, name):
 	e = self.stack.pop()
+	#print 'ee(%s)' % repr(name)
 
     def characters(self, chars):
+	#print 'tx(%s)' % repr(chars)
 	top = self.stack[-1]
 	e = TextXmlNode(text = chars)
 	top.add(e)
@@ -165,19 +168,29 @@ class Block(Span):
 	return "\n%s\n" % t
 
 
-class List(Block):
+class List(Span):
     def __init__(self, itemprefix, lineprefix, items):
-	Block.__init__(self, lineprefix, items)
+	Span.__init__(self, items)
 	assert(isinstance(itemprefix, basestring))
+	assert(isinstance(lineprefix, basestring))
 	self.itemprefix = itemprefix
+	self.lineprefix = lineprefix
 
     def render_item(self, item, raw):
 	if isinstance(item, Block):
-	    return (self.itemprefix 
-		    + Block.render_item(self, item, raw).lstrip())
+	    ri = Span.render_item(self, item, raw).lstrip()
+	    ri = re.sub("\n", "\n%s" % self.lineprefix, ri)
+	    return (self.itemprefix + ri)
 	else:
 	    assert(item.render(0).strip() == '')
 	    return ''
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	t = Span.render(self, raw)
+	if not raw:
+	    t = re.sub(r'^\s+|\s+$', '', t)
+	return "\n%s\n" % t
 
 
 class Section(Block):
@@ -202,17 +215,21 @@ def parse_element(n):
     if isinstance(n, TextXmlNode):
 	return Literal(n.text)
     elif n.name in ['root', 'task', 'taskbody', 'postreq', 'prereq']:
-	return Section('My Task (%s)' % n.name, _subs(n))
+	return Section('Section (%s)' % n.name, _subs(n))
     elif n.name in ['steps']:
-	return List('- ', '    ', _subs(n))
-    elif n.name in ['step', 'p', 'cmd', 'stepresult', 'info']:
+	return List('\n1. ', '    ', _subs(n))
+    elif n.name in ['step', 'p', 'cmd', 'stepresult']:
 	return Block('', _subs(n))
     elif n.name in ['note']:
-	return Block('    ', [Literal('> **Note:**')] + _subs(n))
+	return Block('> ', [Literal('> **Note:**')] + _subs(n))
+    elif n.name in ['info']:
+	#return Block('', [Literal('<i>')] + _subs(n) + [Literal('</i>')])
+	return Block('', _subs(n))
     elif n.name in ['uicontrol', 'wintitle']:
 	return Span([Literal('**')] + _subs(n) + [Literal('**')])
     elif n.name in ['title']:
-	return Literal('') # FIXME
+	# FIXME: capture the title to go into the parent section
+	return Literal('')
     else:
 	die(n)
 
