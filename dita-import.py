@@ -1,17 +1,8 @@
 import xml.sax, sys, re
 
-# p, ul/ol, li
-# ol: steps->step
-# ul: ul->li
-# headings: task->title, prereq, context, steps
-# bold: uicontrol
-# draft-comment
-
-def clean(s):
-    return re.sub(r'[\n\r \t]+', u' ', s)
-
 def join(between, l):
     return unicode(between).join([unicode(i) for i in l])
+
 
 treetop = None
 def _die_find(n, list, path):
@@ -21,6 +12,7 @@ def _die_find(n, list, path):
 	p = _die_find(n, i, path + [list.name])
 	if p:
 	    return p
+
     
 def die(n):
     if not treetop:
@@ -31,22 +23,18 @@ def die(n):
     else:
 	raise Exception('node not found: %s' % repr(n))
 
-def indent(s, prefix):
-    s = s.lstrip()
-    return re.sub("\n", "\n" + prefix, s).strip()
 
-class Node:
-    def __init__(self, name, attrs = {}, text = ''):
+class XmlNode:
+    def __init__(self, name, attrs={}):
 	self.name = str(name)
 	self.attrs = dict(attrs)
-	self.text = clean(unicode(text))
 	self.children = []
 
     def __repr__(self):
-	if self.text:
-	    return repr((self.name, self.text))
+	if self.attrs:
+	    return "<%s %s>" % (self.name, repr(self.attrs))
 	else:
-	    return repr(self.name)
+	    return "<%s>" % self.name
 
     def __iter__(self):
 	return iter(self.children)
@@ -54,91 +42,35 @@ class Node:
     def add(self, child):
 	self.children.append(child)
 
-    def render(self):
-	if self.name == 'stepxmp':
-	    return ''
-	elif self.name == 'note':
-	    st = self.subtext()
-	    if st:
-		return "\n\n> **Note:** %s\n\n" % indent(st, '> ')
-	    else:
-		return ''
-	elif self.name in ['uicontrol', 'wintitle', 'userinput',
-			   'filepath', 'fn', 'b']:
-	    return " **%s** " % clean(self.subtext().strip())
-	elif self.name in ['i']:
-	    return " *%s* " % clean(self.subtext().strip())
-	elif self.name == '':
-	    return self.subtext()
-	elif self.name == 'draft-comment':
-	    return '<!-- %s -->' % self.subtext().strip()
-	elif self.name == 'p':
-	    return "\n\n%s\n\n" % self.subtext()
-	elif self.name in ['fig', 'image']:
-	    return ''   # FIXME
-	elif self.name == 'substeps':
-	    return process_list(self, "substep", "- ")
-	elif self.name == 'choices':
-	    return process_list(self, "choice", "- ")
-	elif self.name == 'sl':
-	    return process_list(self, "sli", "- ")
-	elif self.name == 'dl':
-	    return process_list(self, "dlentry", "- ")
-	elif self.name == 'ul':
-	    return process_list(self, "li", "- ")
-	elif self.name in ['cmd', 'stepresult', 'info', 'tutorialinfo',
-			   'li', 'sli', 'step', 'substep', 'choice',
-			   'dlentry']:
-	    return self.subtext()
-	elif self.name == 'section':
-	    return '\n\n# Section!\n\n%s' % self.subtext()
-	elif self.name in ['title', 'dt', 'dd']:
-	    # FIXME
-	    return '%s(%s)' % (self.name, self.subtext())
-	else:
-	    die(self)
-	die(self)
 
-    def subtext(self):
-	text = clean(self.text)
-	for t in self:
-	    text += t.render()
-	return text + ' '
+class TextXmlNode(XmlNode):
+    def __init__(self, text):
+	XmlNode.__init__(self, '')
+	self.text = text
 
-    def nonempty(self):
-	return self.text or self.children
+    def __repr__(self):
+	return repr(self.text)
+    
 
 class TreeHandler(xml.sax.ContentHandler):
     def __init__(self):
 	xml.sax.ContentHandler.__init__(self)
-	self.root = Node('root')
+	self.root = XmlNode('root')
 	self.stack = [self.root]
 
     def startElement(self, name, attrs):
-	e = Node(name, attrs = attrs)
+	e = XmlNode(name, attrs = attrs)
 	self.stack[-1].add(e)
 	self.stack.append(e)
 
     def endElement(self, name):
 	e = self.stack.pop()
 
-	# if *all* children are plaintext, join them together into this node's
-	# 'text' member
-	if not filter(lambda c: c.name, e.children):
-	    for c in e.children:
-		e.text += c.text
-	    e.children = []
-
-	# empty text nodes are boring
-	e.children = filter(lambda c: (c.name not in ['', 'p', 'note']
-				       or c.text.strip()
-				       or c.subtext().strip()),
-			    e.children)
-
     def characters(self, chars):
 	top = self.stack[-1]
-	e = Node('', text = chars)
+	e = TextXmlNode(text = chars)
 	top.add(e)
+	
 
 def xml_to_tree(filename):
     p = xml.sax.make_parser()
@@ -149,91 +81,160 @@ def xml_to_tree(filename):
     p.parse(open(filename))
     return h.root
 
-def print_tree(children, indent):
+
+def print_xmltree(children, indent):
     for n in children:
-	print_node(n, indent)
+	print_xmlnode(n, indent)
 
-def print_node(n, indent = 0):
+
+def print_xmlnode(n, indent = 0):
     print '%s%s' % (' '*indent, repr(n))
-    print_tree(n.children, indent+4)
+    print_xmltree(n.children, indent+4)
 
-def process_list(steps, itemname, prefix):
-    out = []
-    for step in steps:
-	if step.name == 'dlhead':
-	    continue  # FIXME
-	if not step.name == itemname:
-	    die(step)
-	t = step.render().strip()
-	if t:
-	    out.append("\n%s%s" % (prefix, indent(t, '    ')))
-    return join("\n", out)
-    
 
-def process_task(task, filename):
-    title = filename
-    tags = ['Tasks']
-    body = []
-    for t in task:
-	if t.name in ['title', 'shortdesc']:
-	    title = t.subtext()
-	elif t.name in ['taskbody']:
-	    for tb in t:
-		if tb.name == 'prereq':
-		    if tb.nonempty():
-			st = tb.subtext()
-			if st:
-			    body.append('# Before you start')
-			    body.append(st)
-		elif tb.name == 'context':
-		    if tb.nonempty():
-			st = tb.subtext()
-			if st:
-			    body.append('# Context')
-			    body.append(st)
-		elif tb.name == 'steps':
-		    if tb.nonempty():
-			pl = process_list(tb, "step", "1. ")
-			if pl:
-			    body.append('# Steps')
-			    body.append(pl)
-		elif tb.name == 'postreq':
-		    if tb.nonempty():
-			st = tb.subtext()
-			if st:
-			    body.append('# Next steps')
-			    body.append(st)
-		else:
-		    die(tb)
-	elif t.name == 'body':
-	    body.append(t.subtext())
-	elif t.name == 'reference':
-	    pass  # FIXME
-	elif t.name == 'related-links':
-	    pass  # FIXME: is it okay to just leave this to the kb software?
-	elif t.name == 'task':
-	    pass  # FIXME: what's a task inside a task??
+class Element:
+    def __init__(self):
+	pass
+
+    def __repr__(self):
+	print 'representing(%s)' % self.__class__.__name__
+	return "%s(%s)" % (self.__class__.__name__, repr(self.render(1)))
+
+    def dump(self, indent):
+	print indent + self.__class__.__name__
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	return ""
+
+
+class Literal(Element):
+    def __init__(self, text):
+	assert(isinstance(text, basestring))
+	self.text = text
+
+    def dump(self, indent):
+	Element.dump(self, indent)
+	print "%s    %s" % (indent, repr(self.text))
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	if raw:
+	    return self.text
 	else:
-	    die(t)
+	    return re.sub(r'[\n\r \t]+', u' ', self.text)
 
-    if body:
-	return "title: %s\ntags: %s\n\n%s" % (title, join(", ", tags),
-					      join("\n\n", body))
+
+class Span(Element):
+    def __init__(self, items):
+	Element.__init__(self)
+	assert(isinstance(items, list))
+	for i in items:
+	    print i
+	    assert(isinstance(i, Element))
+	self.items = items
+
+    def dump(self, indent):
+	Element.dump(self, indent)
+	for i in self.items:
+	    i.dump(indent + '    ')
+
+    def render_item(self, item, raw):
+	return item.render(raw)
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	out = []
+	for i in self.items:
+	    out.append(self.render_item(i, raw))
+	return join("", out)
+
+
+class Block(Span):
+    def __init__(self, lineprefix, items):
+	Span.__init__(self, items)
+	assert(isinstance(lineprefix, basestring))
+	self.lineprefix = lineprefix
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	t = Span.render(self, raw)
+	t = re.sub("\n", "\n%s" % self.lineprefix, t)
+	if not raw:
+	    t = re.sub(r'^\s+|\s+$', '', t)
+	return "\n%s\n" % t
+
+
+class List(Block):
+    def __init__(self, itemprefix, lineprefix, items):
+	Block.__init__(self, lineprefix, items)
+	assert(isinstance(itemprefix, basestring))
+	self.itemprefix = itemprefix
+
+    def render_item(self, item, raw):
+	if isinstance(item, Block):
+	    return (self.itemprefix 
+		    + Block.render_item(self, item, raw).lstrip())
+	else:
+	    assert(item.render(0).strip() == '')
+	    return ''
+
+
+class Section(Block):
+    def __init__(self, title, items):
+	Block.__init__(self, '', items)
+	assert(isinstance(title, basestring))
+	self.title = title
+
+    def render(self, raw):
+	print 'rendering(%s)' % self.__class__.__name__
+	t = Block.render(self, raw)
+	t = re.sub(re.compile("^#", re.M), "##", t)
+	return "\n# %s\n%s" % (self.title, t)
+
+
+def _subs(n):
+    return list([parse_element(sub) for sub in n])
+
+def parse_element(n):
+    print 'pe(%s)' % n
+    assert(isinstance(n, XmlNode))
+    if isinstance(n, TextXmlNode):
+	return Literal(n.text)
+    elif n.name in ['root', 'task', 'taskbody', 'postreq', 'prereq']:
+	return Section('My Task (%s)' % n.name, _subs(n))
+    elif n.name in ['steps']:
+	return List('- ', '    ', _subs(n))
+    elif n.name in ['step', 'p', 'cmd', 'stepresult', 'info']:
+	return Block('', _subs(n))
+    elif n.name in ['note']:
+	return Block('    ', [Literal('> **Note:**')] + _subs(n))
+    elif n.name in ['uicontrol', 'wintitle']:
+	return Span([Literal('**')] + _subs(n) + [Literal('**')])
+    elif n.name in ['title']:
+	return Literal('') # FIXME
+    else:
+	die(n)
+
 
 def process(filename):
     tree = xml_to_tree(filename)
     global treetop
     treetop = tree
-    print_node(tree)
-    for sub in tree:
-	pt = None
-	if sub.name in ['task', 'topic']:
-	    pt = process_task(sub, filename)
-	if pt:
-	    print pt.encode('utf-8')
-	    open("%s.txt" % filename, "w").write(pt.encode('utf-8'))
-	else:
-	    print 'Skipping %s' % filename
+    print_xmlnode(tree)
+    print "--------------------\n"
+
+    pt = parse_element(tree)
+    pt.dump('')
+    print "--------------------\n"
+    
+    print repr(pt)
+    if pt:
+	enc = pt.render(0).encode('utf-8')
+	print enc
+	open("%s.txt" % filename, "w").write(enc)
+    else:
+	print 'Skipping %s' % filename
 
 for name in sys.argv[1:]:
     process(name)
