@@ -228,28 +228,40 @@ def _subs(n):
 def _title(top):
     for n in top:
 	if n.name == 'title':
-	    return n.subtext()
+	    return re.sub(r'\s+', ' ', n.subtext()).strip()
 
 def parse_element(n):
     #print 'pe(%s)' % n
     assert(isinstance(n, XmlNode))
     if isinstance(n, TextXmlNode):
 	return Literal(n.text)
-    elif n.name in ['root', 'task', 'taskbody', 'postreq', 'prereq']:
+    elif n.name in ['root', 'task', 'taskbody',
+		    'conbody', 'concept', 'section']:
 	return Section(_title(n), _subs(n))
+    elif n.name in ['postreq', 'prereq', 'context']:
+	return Section(n.name, _subs(n))
+    elif n.name in ['choices', 'substeps', 'sl', 'ul', 'steps-unordered']:
+	return List('\n- ', '    ', _subs(n))
     elif n.name in ['steps']:
 	return List('\n1. ', '    ', _subs(n))
-    elif n.name in ['step', 'p', 'cmd', 'stepresult']:
+    elif n.name in ['step', 'p', 'cmd', 'stepresult', 'choice', 'stepxmp',
+		    'substep', 'shortdesc', 'sli', 'tutorialinfo', 'li']:
+	# FIXME: maybe treat some of these specially
 	return Block('', _subs(n))
     elif n.name in ['note']:
 	return Block('> ', [Literal('> **Note:**')] + _subs(n))
     elif n.name in ['info']:
 	#return Block('', [Literal('<i>')] + _subs(n) + [Literal('</i>')])
 	return Block('', _subs(n))
-    elif n.name in ['uicontrol', 'wintitle']:
+    elif n.name in ['uicontrol', 'wintitle', 'b', 'filepath', 'userinput']:
 	return Span([Literal('**')] + _subs(n) + [Literal('**')])
+    elif n.name in ['i', 'fn']:
+	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
-	# FIXME: capture the title to go into the parent section
+	return Literal('')  # already handled this in _title() earlier
+    elif n.name in ['fig', 'reference', 'image', 'draft-comment',
+		    'related-links']:
+	# FIXME
 	return Literal('')
     else:
 	die(n)
