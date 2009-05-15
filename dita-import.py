@@ -181,7 +181,7 @@ class List(Span):
 	self.lineprefix = lineprefix
 
     def render_item(self, item, raw):
-	if isinstance(item, Block):
+	if isinstance(item, Block) and item.render(0).strip():
 	    ri = Span.render_item(self, item, raw).lstrip()
 	    ri = re.sub("\n", "\n%s" % self.lineprefix, ri)
 	    return (self.itemprefix + ri)
@@ -206,7 +206,7 @@ class Section(Block):
     def render(self, raw):
 	#print 'rendering(%s)' % self.__class__.__name__
 	t = Block.render(self, raw)
-	if self.title:
+	if self.title and t.strip():
 	    t = re.sub(re.compile("^#", re.M), "##", t)
 	    return "\n# %s\n%s" % (self.title, t)
 	else:
@@ -223,13 +223,14 @@ class Section(Block):
 
 
 def _subs(n):
-    return list([parse_element(sub) for sub in n])
+    return list(filter(None, [parse_element(sub) for sub in n]))
 
 def _title(top):
     for n in top:
 	if n.name == 'title':
 	    return re.sub(r'\s+', ' ', n.subtext()).strip()
 
+# Warning: May return None
 def parse_element(n):
     #print 'pe(%s)' % n
     assert(isinstance(n, XmlNode))
@@ -271,11 +272,11 @@ def parse_element(n):
     elif n.name in ['i', 'fn', 'filepath']:
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
-	return Literal('')  # already handled this in _title() earlier
+	pass  # already handled this in _title() earlier
     elif n.name in ['fig', 'reference', 'image', 'draft-comment',
 		    'related-links', 'fm-ditafile', 'dita', 'indexterm']:
 	# FIXME
-	return Literal('')
+	pass
     else:
 	die(n)
 
