@@ -30,8 +30,15 @@ def _load_docs(topdir):
 	    nextid = max(id+1, nextid)
     idfile = open(idfilename, "a")
     
-    print 'loading all from "%s"' % topdir
     titlemap = {}
+    for doc in Doc.objects.all():
+	if not os.path.exists(topdir + doc.pathname):
+	    print 'Deleting old document: %s' % doc.filename
+	    doc.delete()
+	else:
+	    titlemap[doc.title] = doc
+	    
+    print 'loading all from "%s"' % topdir
     for (dirpath, dirnames, filenames) in os.walk(topdir):
 	assert(dirpath.startswith(topdir))
 	for basename in filenames:
@@ -58,7 +65,7 @@ def _load_docs(topdir):
 		idfile.write("%d %s\n" % (id, basename))
 	    nextid = max(id+1, nextid)
 
-	    while title in titlemap:
+	    while title in titlemap and titlemap[title].filename != basename:
 		print ('WARNING: Duplicate title:\n  "%s"\n  "%s"'
 		       % (basename, titlemap[title].filename))
 		title += " [duplicate]"
@@ -74,10 +81,6 @@ def _load_docs(topdir):
 		(t, created) = Tag.objects.get_or_create(name=tname)
 		d.tags.add(t)
 
-    for doc in Doc.objects.all():
-	if not os.path.exists(topdir + doc.pathname):
-	    print 'Deleting old document: %s' % doc.filename
-	    doc.delete()
     for tag in Tag.objects.all():
 	if not tag.doc_set.count():
 	    print 'Deleting old tag: %s' % tag.name
