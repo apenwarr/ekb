@@ -57,7 +57,8 @@ def _autosummary(text, want_words, highlighter, width = 120):
 		  text)
     text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
     text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
-    text = re.sub(r'[*`]', ' ', text)
+    text = re.sub(r'[*`]', '', text)
+    text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', re.M), ' ', text)
     text = " %s " % text
     
     match = matchend = -1
