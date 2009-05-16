@@ -110,6 +110,30 @@ td {
     padding: 0;
     border: 0;
 }
+table.pretty, table.eqldata {
+    border-collapse: collapse;
+    margin: 15px 10px;              
+    background: #fff;
+}
+table.pretty th, table.eqldata th {
+    height: 38px;
+    padding-left: 12px;
+    padding-right: 12px;
+    color: #fff;
+    text-align: left;
+    background: #ADD163;    
+    border-width: 1px;
+    border-style: solid;
+    border-color: #C4DE8F #93C138 #93C138 #C4DE8F;  
+}
+table.pretty tr, table.eqldata tr {
+    height: 34px;
+}
+table.pretty td, table.eqldata td {
+    padding-left: 11px;
+    padding-right: 11px;
+    border: 1px solid #E7F0CC;
+}
 /* end - table */
 
 /* form elements */
