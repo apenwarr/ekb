@@ -256,7 +256,7 @@ def parse_element(n):
     elif n.name in ['root', 'task', 'taskbody',
 		    'concept', 'conbody', 'section',
 		    'topic', 'body',
-		    'dita',
+		    'dita', 'fm-ditafile',
 		    'reference', 'refbody', 'refsyn']:
 	return Section(_title(n), _subs(n))
     elif n.name in ['prereq']:
@@ -307,7 +307,7 @@ def parse_element(n):
     elif n.name in ['title']:
 	pass  # already handled this in _title() earlier
     elif n.name in ['fig', 'image', 'draft-comment',
-		    'related-links', 'fm-ditafile', 'indexterm',
+		    'related-links', 'indexterm',
 		    'colspec']:
 	pass
     else:
@@ -347,7 +347,7 @@ def process(filename):
 			'nominee': 'Nominees',
 			'import': 'Importing',
 			'commission': 'Commission',
-			'interest': 'Interest',
+			'interest': 'Interest Rates',
 			'rate': 'Interest Rates',
 			'decd': 'Estates',
 			'death': 'Estates',
