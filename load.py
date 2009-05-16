@@ -77,9 +77,9 @@ def _load_docs(topdir):
 		    last_modified = mtime)
 	    titlemap[title] = d
 	    d.save()
-	    for tname in tags:
-		(t, created) = Tag.objects.get_or_create(name=tname)
-		d.tags.add(t)
+	    d.use_latest()
+	    d.title = title
+	    d.save()
 
     for tag in Tag.objects.all():
 	if not tag.doc_set.count():
