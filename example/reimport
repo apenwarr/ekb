@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
-rm -f xml/*.txt
+rm -f xml/*.xml.txt
+rm -f xml/*.ditamap.txt
 python ekb/dita-import.py xml/*.xml
+python ekb/dita-import.py xml/*.ditamap
 rm -rf docs/*
 mkdir -p docs
-cp xml/*.xml.txt docs/
+cp xml/*.txt docs/

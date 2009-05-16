@@ -103,7 +103,7 @@ def print_xmlnode(n, indent = 0):
 
 class Element:
     def __init__(self):
-	pass
+	self._tags = {}
 
     def __repr__(self):
 	return "%s(%s)" % (self.__class__.__name__, repr(self.render(1)))
@@ -115,9 +115,17 @@ class Element:
 	#print 'rendering(%s)' % self.__class__.__name__
 	return ""
 
+    def tags(self):
+	return self._tags
+
+    def add_tag(self, tag):
+	self._tags[tag] = 1
+	return self
+
 
 class Literal(Element):
     def __init__(self, text):
+	Element.__init__(self)
 	assert(isinstance(text, basestring))
 	self.text = text
 
@@ -155,6 +163,12 @@ class Span(Element):
 	for i in self.items:
 	    out.append(self.render_item(i, raw))
 	return join("", out)
+
+    def tags(self):
+	t = Element.tags(self)
+	for i in self.items:
+	    t.update(i.tags())
+	return t
 
 
 class Block(Span):
@@ -215,15 +229,16 @@ class List(Block):
 
 
 class Section(Block):
-    def __init__(self, title, items):
+    def __init__(self, title, items, force = 0):
 	Block.__init__(self, '', items)
 	assert(title is None or isinstance(title, basestring))
 	self.title = title
+	self.force = force
 
     def render(self, raw):
 	#print 'rendering(%s)' % self.__class__.__name__
 	t = Block.render(self, raw)
-	if self.title and t.strip():
+	if self.title and (self.force or t.strip()):
 	    t = re.sub(re.compile("^#", re.M), "##", t)
 	    return "\n# %s\n%s" % (self.title, t)
 	else:
@@ -247,18 +262,32 @@ def _title(top):
 	if n.name == 'title':
 	    return re.sub(r'\s+', ' ', n.subtext()).strip()
 
-# Warning: May return None
+# WARNING: may return None
 def parse_element(n):
     #print 'pe(%s)' % n
     assert(isinstance(n, XmlNode))
     if isinstance(n, TextXmlNode):
 	return Literal(n.text)
-    elif n.name in ['root', 'task', 'taskbody',
+    elif n.name in ['root',
+		    'task', 'taskbody',
 		    'concept', 'conbody', 'section',
 		    'topic', 'body',
 		    'dita', 'fm-ditafile',
 		    'reference', 'refbody', 'refsyn']:
-	return Section(_title(n), _subs(n))
+	s = Section(_title(n), _subs(n))
+	if n.name == 'task':
+	    s.add_tag('Tasks')
+	elif n.name == 'concept':
+	    s.add_tag('Concepts')
+	return s
+    elif n.name in ['map']:
+	return Section(n.attrs['title'], _subs(n)).add_tag('Books')
+    elif n.name in ['topichead']:
+	return Section(n.attrs['navtitle'], _subs(n))
+    elif n.name in ['topicref']:
+	href = re.sub(r'\.(xml|ditamap)$', r'.\1.txt', n.attrs['href'])
+	title = n.attrs['navtitle']
+	return Section("[%s][%s]" % (title, href), _subs(n), force=1)
     elif n.name in ['prereq']:
 	return PrefixBlock('**Prerequisites:** ', '', _subs(n))
     elif n.name in ['postreq']:
@@ -295,6 +324,8 @@ def parse_element(n):
 		     [Literal('<td>')] + _subs(n) + [Literal('</td>')])
     elif n.name in ['note']:
 	return PrefixBlock('> **Note:** ', '> ', _subs(n))
+    elif n.name in ['draft-comment']:
+	return PrefixBlock('> **DRAFT FIXME:** ', '> ', _subs(n))
     elif n.name in ['lines']:
 	return Block('    ', [Literal('    ')] + _subs(n))
     elif n.name in ['info']:
@@ -306,7 +337,7 @@ def parse_element(n):
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
 	pass  # already handled this in _title() earlier
-    elif n.name in ['fig', 'image', 'draft-comment',
+    elif n.name in ['fig', 'image',
 		    'related-links', 'indexterm',
 		    'colspec']:
 	pass
@@ -329,7 +360,7 @@ def process(filename):
     print "--------------------\n"
 
     title = pt.steal_title()
-    tags = {}
+    tags = pt.tags()
     text = pt.render(0).strip()
     if text:
 	text = "\n%s\n" % text
