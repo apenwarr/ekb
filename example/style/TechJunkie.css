@@ -20,7 +20,7 @@ a:hover {
 }
 
 /* headers */
-h1, h2, h3 {
+h1, h2, h3, h4, h5, h6, h7 {
     font-family: 'Trebuchet MS', 'Helvetica Neue', Arial, Sans-serif;
     font-weight: Bold; 	
     padding: 10px;		
@@ -35,7 +35,28 @@ h2 {
 }
 h3 {
     font-size: 1.4em;
-    font-weight: normal;	
+    font-weight: normal;
+}
+h4 {
+    font-size: 1.2em;
+    font-weight: normal;
+    padding-bottom: 5px;
+    padding-top: 5px;
+}
+h5 {
+    font-size: 1.1em;
+    font-weight: normal;
+    padding-bottom: 5px;
+}
+h6 {
+    font-size: 1.0em;
+    font-weight: normal;
+    padding-bottom: 5px;
+}
+h7 {
+    font-size: 0.9em;
+    font-weight: normal;
+    padding-bottom: 5px;
 }
 
 /* Paragraph */
@@ -109,6 +130,10 @@ table {
 td {
     padding: 0;
     border: 0;
+}
+tr.header > td {
+    text-decoration: underline;
+    font-weight: bold;
 }
 table.pretty, table.eqldata {
     border-collapse: collapse;
