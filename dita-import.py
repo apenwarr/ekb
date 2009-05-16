@@ -186,26 +186,29 @@ class PrefixBlock(Block):
 	    return ''
 
 
-class List(Span):
+class List(Block):
     def __init__(self, itemprefix, lineprefix, items):
-	Span.__init__(self, items)
+	Block.__init__(self, lineprefix, items)
 	assert(isinstance(itemprefix, basestring))
-	assert(isinstance(lineprefix, basestring))
 	self.itemprefix = itemprefix
-	self.lineprefix = lineprefix
 
     def render_item(self, item, raw):
 	if isinstance(item, Block) and item.render(0).strip():
-	    ri = Span.render_item(self, item, raw).lstrip()
+	    ri = Block.render_item(self, item, raw).lstrip()
 	    ri = re.sub("\n", "\n%s" % self.lineprefix, ri)
 	    return (self.itemprefix + ri)
 	else:
-	    assert(item.render(0).strip() == '')
+	    print repr(item.render(0).strip())
+	    #assert(not item.render(0).strip())
+	    if item.render(0).strip():
+		print 'yyy: %s' % repr(item.__class__.__name__)
+		print 'xxx: %s' % repr(item.render(0).strip())
+		assert(0)
 	    return ''
 
     def render(self, raw):
 	#print 'rendering(%s)' % self.__class__.__name__
-	t = Span.render(self, raw)
+	t = Block.render(self, raw)
 	if not raw:
 	    t = re.sub(r'^\s+|\s+$', '', t)
 	return "\n%s\n" % t
@@ -252,7 +255,9 @@ def parse_element(n):
 	return Literal(n.text)
     elif n.name in ['root', 'task', 'taskbody',
 		    'concept', 'conbody', 'section',
-		    'topic', 'body']:
+		    'topic', 'body',
+		    'dita',
+		    'reference', 'refbody', 'refsyn']:
 	return Section(_title(n), _subs(n))
     elif n.name in ['prereq']:
 	return PrefixBlock('**Prerequisites:** ', '', _subs(n))
@@ -263,7 +268,6 @@ def parse_element(n):
     elif n.name in ['choices', 'substeps', 'sl', 'ul', 'steps-unordered']:
 	return List('\n- ', '    ', _subs(n))
     elif n.name in ['dl']:
-	# FIXME: definition lists
 	return List('\n- ', '    ', _subs(n))
     elif n.name in ['dlhead', 'dthd', 'ddhd', 'dlentry']:
 	# FIXME: handle terms and definitions separately
@@ -275,9 +279,20 @@ def parse_element(n):
     elif n.name in ['steps', 'ol']:
 	return List('\n1. ', '    ', _subs(n))
     elif n.name in ['step', 'p', 'cmd', 'stepresult', 'choice', 'stepxmp',
-		    'substep', 'shortdesc', 'sli', 'tutorialinfo', 'li']:
-	# FIXME: maybe treat some of these specially
+		    'substep', 'shortdesc', 'sli', 'tutorialinfo', 'li',
+		    'thead', 'tbody', 'tgroup']:
 	return Block('', _subs(n))
+    elif n.name in ['table']:
+	return Block('', 
+		     [Literal('<table class="pretty">')] 
+		     + _subs(n)
+		     + [Literal('</table>')])
+    elif n.name in ['row']:
+	return Block('',
+		     [Literal('<tr>')] + _subs(n) + [Literal('</tr>')])
+    elif n.name in ['entry']:
+	return Block('',
+		     [Literal('<td>')] + _subs(n) + [Literal('</td>')])
     elif n.name in ['note']:
 	return PrefixBlock('> **Note:** ', '> ', _subs(n))
     elif n.name in ['lines']:
@@ -291,9 +306,9 @@ def parse_element(n):
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
 	pass  # already handled this in _title() earlier
-    elif n.name in ['fig', 'reference', 'image', 'draft-comment',
-		    'related-links', 'fm-ditafile', 'dita', 'indexterm']:
-	# FIXME
+    elif n.name in ['fig', 'image', 'draft-comment',
+		    'related-links', 'fm-ditafile', 'indexterm',
+		    'colspec']:
 	pass
     else:
 	die(n)
