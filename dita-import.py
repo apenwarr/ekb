@@ -296,13 +296,50 @@ def process(filename):
     print "--------------------\n"
 
     title = pt.steal_title()
+    tags = {}
     text = pt.render(0).strip()
     if text:
+	text = "\n%s\n" % text
+	prefix = ''
 	if title:
-	    text = "title: %s\n\n%s\n" % (title, text)
-	else:
-	    text = "\n%s\n" % text
-	enc = text.encode('utf-8')
+	    prefix += "title: %s\n" % title
+	    tagwords = {'agent': 'Agents',
+			'client': 'Clients',
+			'rsp': 'RSPs',
+			'gic': 'GICs',
+			'transaction': 'Transactions',
+			'estate': 'Estates',
+			'sunrise': 'Sunrise Savings',
+			'application': 'Applications',
+			'nominee': 'Nominees',
+			'import': 'Importing',
+			'commission': 'Commission',
+			'interest': 'Interest',
+			'rate': 'Interest Rates',
+			'decd': 'Deceased',
+			'decease': 'Deceased',
+			'c-': 'Concepts',
+			'autoroll': 'Rollover',
+			'auto-roll': 'Rollover',
+			'rollover': 'Rollover',
+			'cheque': 'Cheques',
+			'certificate': 'Certificates',
+			'deposit': 'Deposits/Withdrawals',
+			'withdraw': 'Deposits/Withdrawals',
+			'transfer': 'Deposits/Withdrawals',
+			'match': 'Matching Screen',
+			'payout': 'Payout Instructions',
+			'report': 'Reports',
+			}
+	    for k,v in tagwords.items():
+		if title.lower().find(k) >= 0:
+		    tags[v] = 1
+	if not tags:
+	    tags['Other'] = 1
+	if tags:
+	    prefix += "tags: %s\n" % (join(", ", tags.keys()))
+	fulltext = "%s\n%s\n" % (prefix, text)
+	enc = fulltext.encode('utf-8')
 	print enc
 	open("%s.txt" % filename, "w").write(enc)
     else:
