@@ -166,10 +166,24 @@ class Block(Span):
     def render(self, raw):
 	#print 'rendering(%s)' % self.__class__.__name__
 	t = Span.render(self, raw)
-	t = re.sub("\n", "\n%s" % self.lineprefix, t)
 	if not raw:
-	    t = re.sub(r'^\s+|\s+$', '', t)
+	    t = t.strip()
+	t = re.sub("\n", "\n%s" % self.lineprefix, t)
 	return "\n\n%s\n" % t
+
+
+class PrefixBlock(Block):
+    def __init__(self, firstprefix, lineprefix, items):
+	Block.__init__(self, lineprefix, items)
+	assert(isinstance(firstprefix, basestring))
+	self.firstprefix = firstprefix
+
+    def render(self, raw):
+	t = Block.render(self, raw).strip()
+	if t.strip():
+	    return "\n\n%s%s\n" % (self.firstprefix, t)
+	else:
+	    return ''
 
 
 class List(Span):
@@ -241,7 +255,7 @@ def parse_element(n):
 		    'topic', 'body']:
 	return Section(_title(n), _subs(n))
     elif n.name in ['prereq']:
-	return Block('', [Literal('**Prerequisites:** ')] + _subs(n))
+	return PrefixBlock('**Prerequisites:** ', '', _subs(n))
     elif n.name in ['postreq']:
 	return Section('Afterwards', _subs(n))
     elif n.name in ['context']:
@@ -265,7 +279,7 @@ def parse_element(n):
 	# FIXME: maybe treat some of these specially
 	return Block('', _subs(n))
     elif n.name in ['note']:
-	return Block('> ', [Literal('> **Note:** ')] + _subs(n))
+	return PrefixBlock('> **Note:** ', '> ', _subs(n))
     elif n.name in ['lines']:
 	return Block('    ', [Literal('    ')] + _subs(n))
     elif n.name in ['info']:
