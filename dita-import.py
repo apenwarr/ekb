@@ -275,7 +275,8 @@ def parse_element(n):
 		    'concept', 'conbody', 'section',
 		    'topic', 'body',
 		    'dita', 'fm-ditafile',
-		    'reference', 'refbody', 'refsyn']:
+		    'reference', 'refbody', 'refsyn',
+		    'fig']:
 	s = Section(_title(n), _subs(n))
 	if n.name == 'task':
 	    s.add_tag('Tasks')
@@ -311,17 +312,21 @@ def parse_element(n):
 	return List('\n1. ', '    ', _subs(n))
     elif n.name in ['step', 'p', 'cmd', 'stepresult', 'choice', 'stepxmp',
 		    'substep', 'shortdesc', 'sli', 'tutorialinfo', 'li',
-		    'thead', 'tbody', 'tgroup']:
+		    'tbody', 'tgroup']:
 	return Block('', _subs(n))
-    elif n.name in ['table']:
+    elif n.name in ['table', 'simpletable']:
 	return Block('', 
 		     [Literal('<table class="pretty">')] 
 		     + _subs(n)
 		     + [Literal('</table>')])
-    elif n.name in ['row']:
+    elif n.name in ['thead', 'sthead']:
+	return Block('',
+		     [Literal('<tr class="header">')] 
+		     + _subs(n) + [Literal('</tr>')])
+    elif n.name in ['row', 'strow']:
 	return Block('',
 		     [Literal('<tr>')] + _subs(n) + [Literal('</tr>')])
-    elif n.name in ['entry']:
+    elif n.name in ['entry', 'stentry']:
 	return Block('',
 		     [Literal('<td>')] + _subs(n) + [Literal('</td>')])
     elif n.name in ['note']:
@@ -339,7 +344,7 @@ def parse_element(n):
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
 	pass  # already handled this in _title() earlier
-    elif n.name in ['fig', 'image',
+    elif n.name in ['image',
 		    'related-links', 'indexterm',
 		    'colspec']:
 	pass
