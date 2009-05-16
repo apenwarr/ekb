@@ -212,7 +212,7 @@ class List(Block):
 	    ri = re.sub("\n", "\n%s" % self.lineprefix, ri)
 	    return (self.itemprefix + ri)
 	else:
-	    print repr(item.render(0).strip())
+	    #print repr(item.render(0).strip())
 	    #assert(not item.render(0).strip())
 	    if item.render(0).strip():
 		print 'yyy: %s' % repr(item.__class__.__name__)
@@ -221,8 +221,10 @@ class List(Block):
 	    return ''
 
     def render(self, raw):
-	#print 'rendering(%s)' % self.__class__.__name__
-	t = Block.render(self, raw)
+	# Yes, this really should be Span.render(), not Block.render().
+	# Block does its lineprefix in render(), but we need to do it in
+	# render_item(), since the first bit of every item is special.
+	t = Span.render(self, raw)
 	if not raw:
 	    t = re.sub(r'^\s+|\s+$', '', t)
 	return "\n%s\n" % t
