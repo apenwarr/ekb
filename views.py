@@ -96,10 +96,26 @@ def redirect(req):
 
 def _subfile(filename, doc):
     t = open(filename).read().decode('utf-8')
-    print t
     t = re.sub('%id%', str(doc.id), t)
     t = re.sub('%title%', doc.title, t)
     return t.encode('utf-8')
+
+def _texfix(doc, t):
+    footer = _subfile("ekb/latex.footer", doc)
+    if re.search(re.compile(r'^\\subsection', re.M), t):
+	# lots of subsections: must be a book
+	header = _subfile("ekb/latex.book", doc)
+	t = re.sub(re.compile(r'^\\section', re.M), 
+		   r'\chapter', t)
+	t = re.sub(re.compile(r'^\\subsection', re.M), 
+		   r'\section', t)
+	t = re.sub(re.compile(r'^\\subsubsection', re.M), 
+		   r'\subsection', t)
+	t = re.sub(re.compile(r'^\\subsubsubsection', re.M), 
+		   r'\subsubsection', t)
+    else:
+	header = _subfile("ekb/latex.article", doc)
+    return header + t + footer
 
 def pdf(req, id):
     docid = atoi(id)
@@ -108,7 +124,8 @@ def pdf(req, id):
 	raise Http404("Document #%d (%s) does not exist." % (docid, id))
     else:
 	mdf = NamedTemporaryFile()
-	mdf.write(doc.expanded_text().encode('utf-8'))
+	mdf.write(doc.expanded_text(headerdepth=1, expandbooks=1)
+		  .encode('utf-8'))
 	mdf.flush()
 
 	p = Popen(args = ['pandoc',
@@ -119,18 +136,18 @@ def pdf(req, id):
 	ltname = mdf.name + '.latex'
 	pdname = mdf.name + '.pdf'
 	ltf = open(ltname, 'w')
-	ltf.write(_subfile("ekb/latex.header", doc))
-	ltf.write(p.stdout.read())
-	ltf.write(_subfile("ekb/latex.footer", doc))
+	ltf.write(_texfix(doc, p.stdout.read()))
 	ltf.flush()
 	p.wait()
-	mdf.close()
-	p = Popen(args = ['pdflatex', '-interaction', 'batchmode', ltname],
-		  cwd = dirname(ltname))
-	p.wait()
+	#mdf.close()
+	for d in [1,2]:
+	    # we have to do this twice so that the TOC is generated correctly
+	    p = Popen(args = ['pdflatex', '-interaction', 'batchmode', ltname],
+		      cwd = dirname(ltname))
+	    p.wait()
 	pd = open(pdname)
-	os.unlink(pdname)
-	os.unlink(ltname)
+	#os.unlink(pdname)
+	#os.unlink(ltname)
 	return HttpResponse(pd, "application/pdf")
 
 def show(req, search = None):
@@ -183,7 +200,8 @@ def show(req, search = None):
 	dict['when'] = nicedate(doc.last_modified)
 	dict['tags'] = doc.tags.all()
 	dict['pdfurl'] = doc.get_url() + ".pdf"
-	dict['text'] = h.highlight(doc.expanded_text(headerdepth=3),
+	dict['text'] = h.highlight(doc.expanded_text(headerdepth=3,
+						     expandbooks=0),
 				   markdown.markdown)
 	dict['similar'] = doc.similar(max=4)
 	dict['dissimilar'] = doc.dissimilar(max=4)
@@ -233,7 +251,9 @@ def show(req, search = None):
 
 	dict['docs'] = []
 	for d in f:
-	    d.autosummary = _autosummary(d.expanded_text(), want_words, h)
+	    d.autosummary = _autosummary(d.expanded_text(headerdepth=1,
+							 expandbooks=1),
+					 want_words, h)
 	    dict['docs'].append(d)
 		
 	return render_to_response('ekb/search.html', dict)

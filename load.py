@@ -95,7 +95,8 @@ def _calc_word_frequencies():
     for doc in Doc.objects.iterator():
 	print ' %s' % doc.filename
 	textbits = [doc.title, doc.title,  # title gets bonus points
-		    doc.filename, doc.expanded_text()]
+		    doc.filename, doc.expanded_text(headerdepth=1,
+						    expandbooks=1)]
 	textbits += [t.name for t in doc.tags.all()]
 	fulltext = join(' ', textbits)
 	words = [w.lower() for w in re.findall(r"(\w+(?:[.'#%@]\w+)?)", fulltext)]

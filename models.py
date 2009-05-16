@@ -70,7 +70,7 @@ class Doc(models.Model):
 	    if not t.name in self._tags:
 		self.tags.remove(t)
 
-    def _try_include(self, indent, filename, isfaq):
+    def _try_include(self, indent, filename, isfaq, expandbooks):
 	indent = indent and int(indent) or 0
 	d = Doc.try_get(filename=str(filename))
 	if filename in _includes_in_progress:
@@ -79,7 +79,8 @@ class Doc(models.Model):
 	    return '[[missing-include:%s]]' % filename
 	else:
 	    _includes_in_progress[filename] = 1
-	    t = self._process_includes(d.text(), depth=indent+1)
+	    t = self._process_includes(d.text(), depth=indent+1,
+				       expandbooks=expandbooks)
 	    if isfaq:
 		parts = re.split(re.compile(r'^#+.*$', re.M), t)
 		assert(len(parts) == 3)
@@ -89,15 +90,29 @@ class Doc(models.Model):
 	    del _includes_in_progress[filename]
 	    return t
 
-    def _process_includes(self, text, depth):
+    def _expand_book(self, pounds, text, ref):
+	return "%s %s\n\n[[include+%d:%s]]\n\n" \
+		% (pounds, text, len(pounds), ref)
+
+    def _process_includes(self, t, depth, expandbooks):
+	# handle headers containing references.  We might want to turn them
+	# into a normal header followed by an "include" (which we handle next)
+	if expandbooks:
+	    t = re.sub(re.compile(r'^(#+)\s*\[([^]]*)\]\s*\[([^]]*)\]\s*$',
+				  re.M),
+		       lambda m: self._expand_book(m.group(1), m.group(2),
+						   m.group(3)),
+		       t)
+	
 	# handle "include" references.  These are our own creation (not
 	# standard markdown), of the form: [[include:filename]]
 	# We just replace that text with the verbatim contents of the referred
 	# document.
 	t = re.sub(r'\[\[(faq)?include(\+(\d+))?:([^]]*)\]\]',
 		   lambda m: self._try_include(m.group(3), m.group(4),
-					       m.group(1) == 'faq'),
-		   text)
+					       m.group(1) == 'faq',
+					       expandbooks),
+		   t)
 
 	# normalize the headers: the toplevel header should be h1, no matter
 	# what it is in the document itself.
@@ -110,11 +125,13 @@ class Doc(models.Model):
 	    self.read_latest()
 	return self._text
 
-    def expanded_text(self, headerdepth=1):
-	text = self._process_includes(self.text(), depth=headerdepth)
+    def expanded_text(self, headerdepth, expandbooks):
+	text = self._process_includes(self.text(), depth=headerdepth,
+				      expandbooks=expandbooks)
 
 	# find all markdown 'refs' that refer to kb pages.
 	# Markdown refs are of the form: [Description String] [refname]
+	#
 	# And we need to add a line like:
 	#   [refname]: /the/path
 	# to the bottom in order to make the ref resolvable.

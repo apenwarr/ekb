@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage[mathletters]{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{enumerate}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+
+\begin{document}
+
+\setcounter{secnumdepth}{0}
+\title{%title%}
+\author{Knowledgebase article %id%}
+\maketitle
