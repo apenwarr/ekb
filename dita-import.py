@@ -240,8 +240,12 @@ def parse_element(n):
 		    'concept', 'conbody', 'section',
 		    'topic', 'body']:
 	return Section(_title(n), _subs(n))
-    elif n.name in ['postreq', 'prereq', 'context']:
-	return Section(n.name, _subs(n))
+    elif n.name in ['prereq']:
+	return Block('', [Literal('**Prerequisites:** ')] + _subs(n))
+    elif n.name in ['postreq']:
+	return Section('Afterwards', _subs(n))
+    elif n.name in ['context']:
+	return Section('', _subs(n))
     elif n.name in ['choices', 'substeps', 'sl', 'ul', 'steps-unordered']:
 	return List('\n- ', '    ', _subs(n))
     elif n.name in ['dl']:
