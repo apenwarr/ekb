@@ -93,7 +93,7 @@ img {
 }
 
 code {
-    font: 500 1em/1.5em 'Lucida Console', 'Courier New', monospace ;
+    font: 500 1em/1.5em 'Lucida Console', 'Courier New', monospace;
 }
 pre > code {
     margin: 5px 0;
@@ -101,7 +101,7 @@ pre > code {
     text-align: left;
     display: block;
     overflow: auto;  
-    font: 500 1em/1.5em 'Lucida Console', 'Courier New', monospace ;
+    font: 500 1em/1.5em 'Lucida Console', 'Courier New', monospace;
     /* white-space: pre; */
     border: 1px dashed #aaaaaa;
 }
@@ -118,7 +118,7 @@ blockquote {
     font-style: italic;
     font-family: Georgia, 'Times New Roman', Times, serif;		
     color: #80614D;	
-    border: 1px solid #DFF4B5; 
+    border: 0px;
 }
 
 /* start - table */
