@@ -48,9 +48,11 @@ class Doc(models.Model):
 	    return i
 	return None
 
+    @models.permalink
     def get_url(self):
-	return "/kb/%d/%s" % (self.id, re.sub(r"\..*$", "", self.filename))
-	#return "/kb/%d" % self.id
+	return ('ekb.views.show', 
+		[self.id, 
+		 "/" + re.sub(r"\..*$", "", self.filename)])
 
     _title = None
     _tags = None
@@ -144,7 +146,7 @@ class Doc(models.Model):
 	    self.read_latest()
 	return self._text
 
-    def expanded_text(self, headerdepth, expandbooks):
+    def expanded_text(self, urlexpander, headerdepth, expandbooks):
 	text = self._process_includes(self.text(), depth=headerdepth,
 				      expandbooks=expandbooks)
 
@@ -159,6 +161,20 @@ class Doc(models.Model):
 	    d = Doc.try_get(filename=ref)
 	    if d:
 		text += "\n[%s]: %s\n" % (ref, d.get_url())
+
+	# expand all non-full URLs, in case the text will be pasted onto another
+	# page (or into a pdf).
+	#
+	# [refname]: /the/path
+	text = re.sub(re.compile(r'^\[([^]]*)\]:\s*(/[^\s]*)', re.M),
+		      lambda m: '[%s]: %s' % (m.group(1),
+					      urlexpander(m.group(2))),
+		      text)
+	# [Description String] (/the/path)
+	text = re.sub(r'\[([^]]*)\]\s*\((/[^\)]*)\)',
+		      lambda m: '[%s](%s)' % (m.group(1),
+					      urlexpander(m.group(2))),
+		      text)
 	return text
 		
     def similar(self, max=4, minweight=0.05):

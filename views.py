@@ -124,7 +124,8 @@ def pdf(req, id):
 	raise Http404("Document #%d (%s) does not exist." % (docid, id))
     else:
 	mdf = NamedTemporaryFile()
-	mdf.write(doc.expanded_text(headerdepth=1, expandbooks=1)
+	mdf.write(doc.expanded_text(req.build_absolute_uri,
+				    headerdepth=1, expandbooks=1)
 		  .encode('utf-8'))
 	mdf.flush()
 
@@ -150,7 +151,7 @@ def pdf(req, id):
 	#os.unlink(ltname)
 	return HttpResponse(pd, "application/pdf")
 
-def show(req, search = None):
+def show(req, search = None, docname = None):
     qsearch = req.REQUEST.get('q', '')
     if not search:
 	search = qsearch
@@ -159,7 +160,6 @@ def show(req, search = None):
     dict['alltags'] = Tag.objects.order_by('name')
     dict['alldocs'] = Doc.objects
     dict['menuitems'] = [
-#	('/index/', 'Home'),
 	('/kb/', 'Knowledgebase'),
     ]
 
@@ -200,7 +200,8 @@ def show(req, search = None):
 	dict['when'] = nicedate(doc.last_modified)
 	dict['tags'] = doc.tags.all()
 	dict['pdfurl'] = doc.get_url() + ".pdf"
-	dict['text'] = h.highlight(doc.expanded_text(headerdepth=3,
+	dict['text'] = h.highlight(doc.expanded_text(req.build_absolute_uri,
+						     headerdepth=3,
 						     expandbooks=0),
 				   markdown.markdown)
 	dict['similar'] = doc.similar(max=4)
@@ -251,7 +252,8 @@ def show(req, search = None):
 
 	dict['docs'] = []
 	for d in f:
-	    d.autosummary = _autosummary(d.expanded_text(headerdepth=1,
+	    d.autosummary = _autosummary(d.expanded_text(req.build_absolute_uri,
+							 headerdepth=1,
 							 expandbooks=1),
 					 want_words, h)
 	    dict['docs'].append(d)
