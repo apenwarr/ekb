@@ -48,9 +48,11 @@ class Doc(models.Model):
 	    return i
 	return None
 
+    @models.permalink
     def get_url(self):
-	return "/kb/%d/%s" % (self.id, re.sub(r"\..*$", "", self.filename))
-	#return "/kb/%d" % self.id
+	return ('ekb.views.show', 
+		[self.id, 
+		 "/" + re.sub(r"\..*$", "", self.filename)])
 
     _title = None
     _tags = None
@@ -70,7 +72,7 @@ class Doc(models.Model):
 	    if not t.name in self._tags:
 		self.tags.remove(t)
 
-    def _try_include(self, indent, filename, isfaq, expandbooks):
+    def _try_include(self, indent, filename, isfaq, skipto, expandbooks):
 	indent = indent and int(indent) or 0
 	d = Doc.try_get(filename=str(filename))
 	if filename in _includes_in_progress:
@@ -82,36 +84,55 @@ class Doc(models.Model):
 	    t = self._process_includes(d.text(), depth=indent+1,
 				       expandbooks=expandbooks)
 	    if isfaq:
-		parts = re.split(re.compile(r'^#+.*$', re.M), t)
+		parts = re.split(re.compile(r'^#+.*$', re.M), t, 2)
 		assert(len(parts) == 3)
 		t = "%s %s\n\n%s\n\n" % ('#'*(indent+1),
 					 re.sub('\n', ' ', parts[1].strip()),
 					 parts[2].strip())
+	    elif skipto:
+		t = re.sub(re.compile(r'.*^#+\s*%s$' % skipto,
+				      re.M+re.S),
+			   '', t)
 	    del _includes_in_progress[filename]
 	    return t
 
-    def _expand_book(self, pounds, text, ref):
-	return "%s %s\n\n[[include+%d:%s]]\n\n" \
-		% (pounds, text, len(pounds), ref)
+    def _expand_book(self, do_expand, pounds, text, ref, skipto):
+	if do_expand:
+	    return ("%s %s\n\n[[include+%d:%s%s]]\n\n"
+		    % (pounds, text, len(pounds), ref,
+		       skipto and "#"+skipto or ""))
+	else:
+	    return ("%s [%s][%s]\n\n" % (pounds, text, ref))
 
     def _process_includes(self, t, depth, expandbooks):
 	# handle headers containing references.  We might want to turn them
 	# into a normal header followed by an "include" (which we handle next)
-	if expandbooks:
-	    t = re.sub(re.compile(r'^(#+)\s*\[([^]]*)\]\s*\[([^]]*)\]\s*$',
-				  re.M),
-		       lambda m: self._expand_book(m.group(1), m.group(2),
-						   m.group(3)),
-		       t)
+	#
+	# Format:  ### [This is a title][doc-file-name]
+	#
+	# or to drop everything before the 'Answer' section in the linked
+	# article:
+	#          ### [This is a title][doc-file-name#Answer]
+	#
+	t = re.sub(re.compile(r'^(#+)\s*\[([^]]*)\]\s*\[([^]#]*)(#([^]]*))?\]\s*$',
+			      re.M),
+		   lambda m: self._expand_book(expandbooks,
+					       m.group(1), m.group(2),
+					       m.group(3), m.group(5)),
+		   t)
 	
 	# handle "include" references.  These are our own creation (not
-	# standard markdown), of the form: [[include:filename]]
+	# standard markdown), of one of these forms:
+	#      [[include:filename]]
+	#      [[include+n:filename]]
+	#      [[faqinclude+n:filename]]
+	#      [[include:filename#Section Name]]
 	# We just replace that text with the verbatim contents of the referred
 	# document.
-	t = re.sub(r'\[\[(faq)?include(\+(\d+))?:([^]]*)\]\]',
+	t = re.sub(r'\[\[(faq)?include(\+(\d+))?:([^]#]*)(#([^]]*))?\]\]',
 		   lambda m: self._try_include(m.group(3), m.group(4),
 					       m.group(1) == 'faq',
-					       expandbooks),
+					       m.group(6), expandbooks),
 		   t)
 
 	# normalize the headers: the toplevel header should be h1, no matter
@@ -125,7 +146,7 @@ class Doc(models.Model):
 	    self.read_latest()
 	return self._text
 
-    def expanded_text(self, headerdepth, expandbooks):
+    def expanded_text(self, urlexpander, headerdepth, expandbooks):
 	text = self._process_includes(self.text(), depth=headerdepth,
 				      expandbooks=expandbooks)
 
@@ -140,6 +161,20 @@ class Doc(models.Model):
 	    d = Doc.try_get(filename=ref)
 	    if d:
 		text += "\n[%s]: %s\n" % (ref, d.get_url())
+
+	# expand all non-full URLs, in case the text will be pasted onto another
+	# page (or into a pdf).
+	#
+	# [refname]: /the/path
+	text = re.sub(re.compile(r'^\[([^]]*)\]:\s*(/[^\s]*)', re.M),
+		      lambda m: '[%s]: %s' % (m.group(1),
+					      urlexpander(m.group(2))),
+		      text)
+	# [Description String] (/the/path)
+	text = re.sub(r'\[([^]]*)\]\s*\((/[^\)]*)\)',
+		      lambda m: '[%s](%s)' % (m.group(1),
+					      urlexpander(m.group(2))),
+		      text)
 	return text
 		
     def similar(self, max=4, minweight=0.05):

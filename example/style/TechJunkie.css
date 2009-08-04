@@ -20,11 +20,12 @@ a:hover {
 }
 
 /* headers */
-h1, h2, h3, h4, h5, h6, h7 {
+h1, h2, h3, h4, h5, h6, h7, h8, h9 {
     font-family: 'Trebuchet MS', 'Helvetica Neue', Arial, Sans-serif;
-    font-weight: Bold; 	
-    padding: 10px;		
-    color: #444;	
+    font-weight: Bold;
+    padding: 10px;
+    color: #444;
+    display: block;
 }
 h1 {
     font-size: 2.2em;		
@@ -55,6 +56,16 @@ h6 {
 }
 h7 {
     font-size: 0.9em;
+    font-weight: normal;
+    padding-bottom: 5px;
+}
+h8 {
+    font-size: 0.8em;
+    font-weight: normal;
+    padding-bottom: 5px;
+}
+h9 {
+    font-size: 0.75em;
     font-weight: normal;
     padding-bottom: 5px;
 }
