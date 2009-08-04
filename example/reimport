@@ -2,8 +2,9 @@
 set -e
 rm -f xml/*.xml.txt
 rm -f xml/*.ditamap.txt
-python ekb/dita-import.py xml/*.xml
-python ekb/dita-import.py xml/*.ditamap
-rm -rf docs/*
+rm -rf docs/*  # don't delete .idmap file
 mkdir -p docs
-cp xml/*.txt docs/
+cd xml && (
+	python ../ekb/dita-import.py ../docs *.xml
+	python ../ekb/dita-import.py ../docs *.ditamap
+)

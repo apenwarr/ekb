@@ -1,7 +1,12 @@
-import xml.sax, sys, re
+import xml.sax, sys, re, os
+from handy import *
 
-def join(between, l):
-    return unicode(between).join([unicode(i) for i in l])
+def fixname(filename):
+    if filename.endswith(".xml"):
+	filename = filename[:-4]
+    elif filename.endswith(".ditamap"):
+	filename = filename[:-8]
+    return filename
 
 
 treetop = None
@@ -288,7 +293,7 @@ def parse_element(n):
     elif n.name in ['topichead']:
 	return Section(n.attrs['navtitle'], _subs(n))
     elif n.name in ['topicref']:
-	href = re.sub(r'\.(xml|ditamap)$', r'.\1.txt', n.attrs['href'])
+	href = fixname(n.attrs['href'])
 	title = n.attrs['navtitle']
 	return Section("[%s][%s]" % (title, href), _subs(n), force=1)
     elif n.name in ['prereq']:
@@ -352,7 +357,7 @@ def parse_element(n):
 	die(n)
 
 
-def process(filename):
+def process(outdir, filename):
     print "\n===================="
     print 'file: %s' % filename
     
@@ -413,11 +418,25 @@ def process(filename):
 	fulltext = "%s\n%s\n" % (prefix, text)
 	enc = fulltext.encode('utf-8')
 	print enc
-	open("%s.txt" % filename, "w").write(enc)
+
+	basename = fixname(filename)
+	fullfilename = "%s/%s" % (outdir, basename)
+	if os.path.exists(fullfilename):
+	    print 'Error: %s already exists.' % fullfilename
+	    exit(2)
+	mkdirp(os.path.dirname(fullfilename))
+	open(fullfilename, "w").write(enc)
     else:
 	print 'Skipping %s' % filename
 
-for name in sys.argv[1:]:
-    process(name)
+if len(sys.argv) < 3:
+    print 'Usage: %s <outdir> <infiles...>' % sys.argv[0]
+    exit(1)
+
+outdir = sys.argv[1]
+if not os.path.isdir(outdir):
+    os.mkdir(outdir)
+for name in sys.argv[2:]:
+    process(outdir, name)
 
 print 'done'
