@@ -10,7 +10,7 @@
 
 \setcounter{secnumdepth}{0}
 \title{%title%}
-\author{Knowledgebase article %id%}
+\author{\href{%id%}{%id%}}
 \maketitle
 \tableofcontents
 

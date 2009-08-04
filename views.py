@@ -94,17 +94,17 @@ def _autosummary(text, want_words, highlighter, width = 120):
 def redirect(req):
     return HttpResponseRedirect('/kb/')
 
-def _subfile(filename, doc):
+def _subfile(req, filename, doc):
     t = open(filename).read().decode('utf-8')
-    t = re.sub('%id%', str(doc.id), t)
+    t = re.sub('%id%', req.build_absolute_uri(doc.get_url_basic()), t)
     t = re.sub('%title%', doc.title, t)
     return t.encode('utf-8')
 
-def _texfix(doc, t):
-    footer = _subfile("ekb/latex.footer", doc)
+def _texfix(req, doc, t):
+    footer = _subfile(req, "ekb/latex.footer", doc)
     if re.search(re.compile(r'^\\subsection', re.M), t):
 	# lots of subsections: must be a book
-	header = _subfile("ekb/latex.book", doc)
+	header = _subfile(req, "ekb/latex.book", doc)
 	t = re.sub(re.compile(r'^\\section', re.M), 
 		   r'\chapter', t)
 	t = re.sub(re.compile(r'^\\subsection', re.M), 
@@ -114,7 +114,7 @@ def _texfix(doc, t):
 	t = re.sub(re.compile(r'^\\subsubsubsection', re.M), 
 		   r'\subsubsection', t)
     else:
-	header = _subfile("ekb/latex.article", doc)
+	header = _subfile(req, "ekb/latex.article", doc)
     return header + t + footer
 
 def pdf(req, id):
@@ -137,7 +137,7 @@ def pdf(req, id):
 	ltname = mdf.name + '.latex'
 	pdname = mdf.name + '.pdf'
 	ltf = open(ltname, 'w')
-	ltf.write(_texfix(doc, p.stdout.read()))
+	ltf.write(_texfix(req, doc, p.stdout.read()))
 	ltf.flush()
 	p.wait()
 	#mdf.close()
