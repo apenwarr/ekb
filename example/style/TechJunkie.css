@@ -252,7 +252,7 @@ input.button {
     padding: 0;	margin: 0;
     width: auto;
     height: 50px;
-    background: #0e609e url(nav-minimal.gif) repeat-x;
+    background: #0e609e url(nav-minimal.png) repeat-x;
 }
 #nav ul {
     float: left;
