@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[mathletters]{ucs}
 \usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
 \usepackage{enumerate}
 \usepackage[colorlinks=true]{hyperref}
 \setlength{\parindent}{0pt}

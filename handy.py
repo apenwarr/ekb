@@ -50,3 +50,10 @@ def mkdirp(name):
 	pass
 
 
+def unlink(name):
+    try:
+    	os.unlink(name)
+    except OSError, e:
+	if e.errno != 2:
+	    raise
+
