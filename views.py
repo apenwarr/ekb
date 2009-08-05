@@ -141,6 +141,7 @@ def pdf(req, id):
 	ltf.flush()
 	p.wait()
 	#mdf.close()
+	print 'Latex file: %s' % ltname
 	for d in [1,2]:
 	    # we have to do this twice so that the TOC is generated correctly
 	    p = Popen(args = ['pdflatex', '-interaction', 'batchmode', ltname],

@@ -349,8 +349,12 @@ def parse_element(n):
 	return Span([Literal('*')] + _subs(n) + [Literal('*')])
     elif n.name in ['title']:
 	pass  # already handled this in _title() earlier
-    elif n.name in ['image',
-		    'related-links', 'indexterm',
+    elif n.name in ['image']:
+	href = n.attrs['href'].replace("\\", "/")
+	base = os.path.basename(href)
+	return Block('', [Literal('![%s](/static/kbfiles/%s)'
+				  % (base, base))])
+    elif n.name in ['related-links', 'indexterm',
 		    'colspec']:
 	pass
     else:
