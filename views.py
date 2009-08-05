@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE
 from os.path import dirname
 import os, re, datetime, markdown
 from ekb.models import Doc, Tag, Word
+from PIL import Image
 from handy import atoi, join, nicedate, pluralize, mkdirp, unlink
 
 class HtmlHighlighter:
@@ -137,8 +138,8 @@ def _pdf_url(req, name):
 	            or os.path.getmtime(name) >= os.path.getmtime(pngname):
 		mkdirp(outdir)
 		unlink(pngname)
-		os.spawnvp(os.P_WAIT, "optipng",
-			   ["optipng", "-out", pngname, "--", name])
+		im = Image.open(name)
+		im.save(pngname, "PNG")
 	    return pngname
 	else:
 	    return name
