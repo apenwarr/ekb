@@ -96,11 +96,12 @@ dd {
 }
 
 /* images */
-img {
+#main img {
     background: #fafafa;
     border: 1px solid #dcdcdc;
     padding: 7px;
     display: block;
+    max-width: 100%;
 }
 
 code {
