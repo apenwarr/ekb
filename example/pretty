@@ -1,0 +1,4 @@
+#!/bin/bash
+tidy -xml -indent -utf8 -q $1
+
+

@@ -7,7 +7,8 @@ from subprocess import Popen, PIPE
 from os.path import dirname
 import os, re, datetime, markdown
 from ekb.models import Doc, Tag, Word
-from handy import atoi, join, nicedate, pluralize
+from PIL import Image
+from handy import atoi, join, nicedate, pluralize, mkdirp, unlink
 
 class HtmlHighlighter:
     def __init__(self, want_words, highlight_tag):
@@ -94,17 +95,17 @@ def _autosummary(text, want_words, highlighter, width = 120):
 def redirect(req):
     return HttpResponseRedirect('/kb/')
 
-def _subfile(filename, doc):
+def _subfile(req, filename, doc):
     t = open(filename).read().decode('utf-8')
-    t = re.sub('%id%', str(doc.id), t)
+    t = re.sub('%id%', req.build_absolute_uri(doc.get_url_basic()), t)
     t = re.sub('%title%', doc.title, t)
     return t.encode('utf-8')
 
-def _texfix(doc, t):
-    footer = _subfile("ekb/latex.footer", doc)
+def _texfix(req, doc, t):
+    footer = _subfile(req, "ekb/latex.footer", doc)
     if re.search(re.compile(r'^\\subsection', re.M), t):
 	# lots of subsections: must be a book
-	header = _subfile("ekb/latex.book", doc)
+	header = _subfile(req, "ekb/latex.book", doc)
 	t = re.sub(re.compile(r'^\\section', re.M), 
 		   r'\chapter', t)
 	t = re.sub(re.compile(r'^\\subsection', re.M), 
@@ -114,33 +115,72 @@ def _texfix(doc, t):
 	t = re.sub(re.compile(r'^\\subsubsubsection', re.M), 
 		   r'\subsubsection', t)
     else:
-	header = _subfile("ekb/latex.article", doc)
+	header = _subfile(req, "ekb/latex.article", doc)
     return header + t + footer
 
+def _html_url(req, name):
+    # return req.build_absolute_uri(name)
+    return name
+    #return 'fruit'
+
+def _pdf_url(req, name):
+    if name.startswith("/static/kbfiles/"):
+	name = os.getcwd() + name
+	dir = os.path.dirname(name)
+	base = os.path.basename(name)
+	if not os.path.exists(name):
+	    return "invalid-path"
+	if base.endswith(".gif"):
+	    # pdflatex can't handle .gif files, sigh
+	    outdir = os.path.join(dir, ".convert")
+	    pngname = os.path.join(outdir, base[:-4] + '.png')
+	    if not os.path.exists(pngname) \
+	            or os.path.getmtime(name) >= os.path.getmtime(pngname):
+		mkdirp(outdir)
+		unlink(pngname)
+		im = Image.open(name)
+		im.save(pngname, "PNG")
+	    return pngname
+	else:
+	    return name
+    else:
+	return req.build_absolute_uri(name)
+
 def pdf(req, id):
+    urlexpander = lambda url: _pdf_url(req, url)
     docid = atoi(id)
     doc = _try_get(Doc.objects, id=docid)
     if not doc:
 	raise Http404("Document #%d (%s) does not exist." % (docid, id))
     else:
-	mdf = NamedTemporaryFile()
-	mdf.write(doc.expanded_text(req.build_absolute_uri,
-				    headerdepth=1, expandbooks=1)
+	mdfx = NamedTemporaryFile()
+	name = mdfx.name
+
+	mdfname = name + '.mdown'
+	mdf = open(mdfname, 'w')
+	mdf.write(doc.expanded_text(urlexpander, headerdepth=1, expandbooks=1)
 		  .encode('utf-8'))
 	mdf.flush()
 
 	p = Popen(args = ['pandoc',
 			  '-f', 'markdown',
 			  '-t', 'latex',
-			  mdf.name],
+			  mdfname],
 		  stdout=PIPE)
-	ltname = mdf.name + '.latex'
-	pdname = mdf.name + '.pdf'
+	latex = p.stdout.read()
+	latex = re.sub(r'\\includegraphics{(.*?)}',
+		       r'\\resizebox{4in}{!}{\\includegraphics{\1}}',
+		       latex)
+	p.wait()
+	
+	ltname = name + '.latex'
+	pdname = name + '.pdf'
 	ltf = open(ltname, 'w')
-	ltf.write(_texfix(doc, p.stdout.read()))
+	ltf.write(_texfix(req, doc, latex))
 	ltf.flush()
 	p.wait()
 	#mdf.close()
+	print 'Latex file: %s' % ltname
 	for d in [1,2]:
 	    # we have to do this twice so that the TOC is generated correctly
 	    p = Popen(args = ['pdflatex', '-interaction', 'batchmode', ltname],
@@ -152,6 +192,7 @@ def pdf(req, id):
 	return HttpResponse(pd, "application/pdf")
 
 def show(req, search = None, docname = None):
+    urlexpander = lambda url: _html_url(req, url)
     qsearch = req.REQUEST.get('q', '')
     if not search:
 	search = qsearch
@@ -200,7 +241,7 @@ def show(req, search = None, docname = None):
 	dict['when'] = nicedate(doc.last_modified)
 	dict['tags'] = doc.tags.all()
 	dict['pdfurl'] = doc.get_url() + ".pdf"
-	dict['text'] = h.highlight(doc.expanded_text(req.build_absolute_uri,
+	dict['text'] = h.highlight(doc.expanded_text(urlexpander,
 						     headerdepth=3,
 						     expandbooks=0),
 				   markdown.markdown)
@@ -252,7 +293,7 @@ def show(req, search = None, docname = None):
 
 	dict['docs'] = []
 	for d in f:
-	    d.autosummary = _autosummary(d.expanded_text(req.build_absolute_uri,
+	    d.autosummary = _autosummary(d.expanded_text(urlexpander,
 							 headerdepth=1,
 							 expandbooks=1),
 					 want_words, h)

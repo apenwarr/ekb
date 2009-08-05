@@ -53,6 +53,10 @@ class Doc(models.Model):
 	return ('ekb.views.show', 
 		[self.id, 
 		 "/" + re.sub(r"\..*$", "", self.filename)])
+		
+    @models.permalink
+    def get_url_basic(self):
+	return ('ekb.views.show', [self.id])
 
     _title = None
     _tags = None

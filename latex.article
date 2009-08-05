@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[mathletters]{ucs}
 \usepackage[utf8x]{inputenc}
+\usepackage{graphicx}
 \usepackage{enumerate}
 \usepackage[colorlinks=true]{hyperref}
 \setlength{\parindent}{0pt}
@@ -10,5 +11,5 @@
 
 \setcounter{secnumdepth}{0}
 \title{%title%}
-\author{Knowledgebase article %id%}
+\author{\href{%id%}{%id%}}
 \maketitle

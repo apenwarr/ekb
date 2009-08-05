@@ -1,4 +1,4 @@
-import datetime
+import datetime, os
 
 def join(between, list):
     if list != None:
@@ -39,4 +39,21 @@ def pluralize(n, suffix = 's'):
 	return ''
     else:
 	return suffix
+
+
+def mkdirp(name):
+    """ Create the directory 'name', including any parent folders if necessary.
+    """
+    try:
+	os.makedirs(name)
+    except OSError:
+	pass
+
+
+def unlink(name):
+    try:
+    	os.unlink(name)
+    except OSError, e:
+	if e.errno != 2:
+	    raise
 

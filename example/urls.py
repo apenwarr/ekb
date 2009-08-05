@@ -12,6 +12,6 @@ urlpatterns = patterns('',
      'ekb.views.show'),
 
     # WARNING: for testing only, insecure!
-    (r'(?P<path>^style/.*)$', 'django.views.static.serve',
+    (r'(?P<path>^static/.*)$', 'django.views.static.serve',
      {'document_root': os.getcwd(), 'show_indexes': True}),
 )
