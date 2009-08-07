@@ -68,6 +68,7 @@ h9 {
     font-size: 0.75em;
     font-weight: normal;
     padding-bottom: 5px;
+    color: #88ac0b;
 }
 
 /* Paragraph */
@@ -96,7 +97,7 @@ dd {
 }
 
 /* images */
-#main img {
+.ekb-article img {
     background: #fafafa;
     border: 1px solid #dcdcdc;
     padding: 7px;
@@ -177,6 +178,8 @@ table.pretty td, table.eqldata td {
 #main form {
     margin: 15px 10px; 
     padding: 10px 5px 10px 5px;
+}
+#main .ekb-article form {
     border: 1px solid #D8E99E; 
 }
 input {
@@ -310,6 +313,9 @@ input.button {
 #main h2 a {
     color: #115280;
     text-decoration: none;		
+}
+#main h3, #main h4, #main h5, #main h6, #main h7, #main h8, #main h9 {
+    color: #115280; 
 }
 #main ul li {
     list-style-image: url(bullet.gif);

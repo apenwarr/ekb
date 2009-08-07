@@ -55,6 +55,18 @@ class Doc(models.Model):
 		 "/" + re.sub(r"\..*$", "", self.filename)])
 		
     @models.permalink
+    def get_pdf_url(self):
+	return ('ekb.views.pdf', 
+		[self.id, 
+		 "/" + re.sub(r"\..*$", "", self.filename)])
+		
+    @models.permalink
+    def get_edit_url(self):
+	return ('ekb.views.edit',
+		[self.id, 
+		 "/" + re.sub(r"\..*$", "", self.filename)])
+		
+    @models.permalink
     def get_url_basic(self):
 	return ('ekb.views.show', [self.id])
 

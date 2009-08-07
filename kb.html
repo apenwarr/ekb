@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block sidebar %}
-    <h3>Search</h3>	
+    <h3>Actions</h3>	
     <form id="kbsearch" class="searchform" action="/kb" method="get">
         <p>
 	<input id="kbsearchbox" type="text" name="q"
@@ -11,6 +11,17 @@
 	<input class="button" type="submit" value="Search" title="Search" />
 	</p>
     </form>
+
+    {% if editurl or pdfurl %}
+    <ul class='sidemenu'>
+    {% if editurl %}
+        <li><a href="{{editurl}}">Edit this article</a></li>
+    {% endif %}
+    {% if pdfurl %}
+        <li><a href="{{pdfurl}}">Print (PDF)</a></li>
+    {% endif %}
+    </ul>
+    {% endif %}
 				
     <h3>Categories</h3>
     <ul class='sidemenu'>

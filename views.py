@@ -146,7 +146,7 @@ def _pdf_url(req, name):
     else:
 	return req.build_absolute_uri(name)
 
-def pdf(req, id):
+def pdf(req, id, docname):
     urlexpander = lambda url: _pdf_url(req, url)
     docid = atoi(id)
     doc = _try_get(Doc.objects, id=docid)
@@ -240,7 +240,8 @@ def show(req, search = None, docname = None):
 	dict['title'] = doc.title
 	dict['when'] = nicedate(doc.last_modified)
 	dict['tags'] = doc.tags.all()
-	dict['pdfurl'] = doc.get_url() + ".pdf"
+	dict['editurl'] = doc.get_edit_url()
+	dict['pdfurl'] = doc.get_pdf_url()
 	dict['text'] = h.highlight(doc.expanded_text(urlexpander,
 						     headerdepth=3,
 						     expandbooks=0),
@@ -300,3 +301,45 @@ def show(req, search = None, docname = None):
 	    dict['docs'].append(d)
 		
 	return render_to_response('ekb/search.html', dict)
+
+def edit(req, id, docname):
+    docid = atoi(id)
+    doc = _try_get(Doc.objects, id=docid)
+    if not doc:
+	raise Http404("Document #%d (%s) does not exist." % (docid, id))
+
+    doc.use_latest()
+    page = doc.get_edit_url()
+	
+    dict = {}
+    dict['alltags'] = Tag.objects.order_by('name')
+    dict['alldocs'] = Doc.objects
+    dict['menuitems'] = [
+	('/kb/', 'Knowledgebase'),
+    ]
+    if len(doc.tags.all()) > 0:
+	t = doc.tags.all()[0]
+	dict['menuitems'].append(('/kb/%s' % t.name, t.name))
+    dict['menuitems'].append((doc.get_url(), 'KB%d' % doc.id))
+    dict['menuitems'].append((doc.get_edit_url(), '-Edit-'))
+    dict['page'] = page
+    dict['title'] = doc.title
+    dict['tags'] = join(', ', [t.name for t in doc.tags.all()])
+    dict['text'] = doc.text()
+
+    return render_to_response('ekb/edit.html', dict)
+
+def save(req, id, docname):
+    docid = atoi(id)
+    doc = _try_get(Doc.objects, id=docid)
+    if not doc:
+	raise Http404("Document #%d (%s) does not exist." % (docid, id))
+    title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
+    tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
+    text  = req.REQUEST.get('markdown-text', '')
+    print 'text is: {%s}' % text
+    if text:
+	f = open('docs/%s' % doc.filename, 'w')
+	f.write(("Title: %s\nTags: %s\n\n%s"
+		 % (title, tags, text)).encode('utf-8'))
+    return HttpResponseRedirect(doc.get_url())

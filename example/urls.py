@@ -6,9 +6,13 @@ urlpatterns = patterns('',
     (r'^index$|^index/$|^$', 
      'ekb.views.redirect'),
 
-    (r'^kb/(?P<id>\d+)(/.+)?\.pdf$',
+    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/edit$',
+     'ekb.views.edit'),
+    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/save$',
+     'ekb.views.save'),
+    (r'^kb/(?P<id>\d+)(?P<docname>/.+)?\.pdf$',
      'ekb.views.pdf'),
-    (r'^kb/(?P<search>[^/]*)(/.*)?$',
+    (r'^kb/(?P<search>[^/]*)(?P<docname>/.*)?$',
      'ekb.views.show'),
 
     # WARNING: for testing only, insecure!

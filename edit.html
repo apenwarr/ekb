@@ -1,0 +1,39 @@
+{% extends "ekb/kb.html" %}
+{% load markup %}
+
+{% block title %}[EDIT] {{title}} - EQL Knowledge{% endblock %}
+
+{% block sidebar_outer %}{% endblock %}
+
+{% block sidebar %}
+    <h3>Placeholder</h3>
+    <ul class='sidemenu'>
+        <li><a href="/kb/">Whatever</a></li>
+    </ul>
+{% endblock %}
+
+{% block main %}
+    {% if message %}<p>{{message}}</p>{% endif %}
+
+    <form action="save" method="POST">
+    <h3><label for="title-text">Title:</label>
+    <input name="title-text" type="text" value="{{title}}" size=60></h3>
+    <h3><label for="tags-text">Tags:</label>
+    <input name="tags-text" type="text" value="{{tags}}" size=60></h3>
+    <p></p>
+    <textarea id="markdown-text" name="markdown-text"
+              style="width: 100%; height: 20em;"
+     >{{text}}</textarea>
+    <div align=right><input type="submit" class="button" value="Save Changes"></div>
+    </form>
+
+    <div class="ekb-article">
+    <h1>Preview</h1>
+    <div class="wmd-preview"></div>
+    </div>
+
+    <script type="text/javascript">
+        wmd_options = { output: "Markdown" };
+    </script>
+    <script type="text/javascript" src="/static/wmd/wmd.js"></script>
+{% endblock %}

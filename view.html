@@ -17,6 +17,7 @@
     {% endif %}
     </p>
 
+    <div class="ekb-article">
     {% autoescape off %}{{ text }}{% endautoescape %}
 
     {% if similar %}
@@ -35,4 +36,5 @@
 	{% endfor %}
 	</ul>
     {% endif %}
+    </div>
 {% endblock %}

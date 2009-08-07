@@ -29,12 +29,15 @@
 			
 <div id="wrap">
 	<div id="content-wrap">
+	        {% block main_outer %}
 		<div id="main">
 		{% block main %}
 			<p>Main</p>
 		{% endblock %}
 		</div>
+		{% endblock main_outer %}
 
+		{% block sidebar_outer %}
 		<div id="sidebar">
 		{% block sidebar %}
 			<h3>Sidebar Menu</h3>
@@ -85,7 +88,8 @@
 			<a href="http://www.styleshout.com/">donate link</a> on my website - it will 
 			be a great help and will surely be appreciated.</p>			
 		{% endblock sidebar %}
-		</div>		
+		</div>
+		{% endblock sidebar_outer %}
 	</div>
 		
 	<div id="footer-wrap">
