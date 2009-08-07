@@ -343,8 +343,9 @@ def save(req, id, docname):
 		 % (title, tags, text)).replace('\r', '').encode('utf-8'))
 	f.close()
 	if os.path.isdir('docs/.git'):
-	    msg = 'kb: updated "%s" via web' % doc.pathname
-	    p = Popen(args = ['git', 'add', doc.pathname], cwd = 'docs')
+	    pn = './%s' % doc.pathname
+	    msg = 'kb: updated "%s" via web' % doc.filename
+	    p = Popen(args = ['git', 'add', pn], cwd = 'docs')
 	    p.wait()
 	    p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
 	    p.wait()
