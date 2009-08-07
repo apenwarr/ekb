@@ -176,13 +176,13 @@ return _4e;
 };
 var _1a=function(_4f){
 _4f=_4f.replace(/^(.+)[ \t]*\n=+[ \t]*\n+/gm,function(_50,m1){
-return _1c("<h1>"+_21(m1)+"</h1>");
+return _1c("<h3>"+_21(m1)+"</h3>");
 });
 _4f=_4f.replace(/^(.+)[ \t]*\n-+[ \t]*\n+/gm,function(_52,m1){
-return _1c("<h2>"+_21(m1)+"</h2>");
+return _1c("<h4>"+_21(m1)+"</h4>");
 });
 _4f=_4f.replace(/^(\#{1,6})[ \t]*(.+?)[ \t]*\#*\n+/gm,function(_54,m1,m2){
-var _57=m1.length;
+var _57=m1.length+2;
 return _1c("<h"+_57+">"+_21(m2)+"</h"+_57+">");
 });
 return _4f;
