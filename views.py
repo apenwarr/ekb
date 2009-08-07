@@ -338,7 +338,14 @@ def save(req, id, docname):
     tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
     text  = req.REQUEST.get('markdown-text', '')
     if text:
-	f = open('docs/%s' % doc.filename, 'w')
+	f = open('docs/%s' % doc.pathname, 'w')
 	f.write(("Title: %s\nTags: %s\n\n%s"
-		 % (title, tags, text)).encode('utf-8'))
+		 % (title, tags, text)).replace('\r', '').encode('utf-8'))
+	f.close()
+	if os.path.isdir('docs/.git'):
+	    msg = 'kb: updated "%s" via web' % doc.pathname
+	    p = Popen(args = ['git', 'add', doc.pathname], cwd = 'docs')
+	    p.wait()
+	    p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
+	    p.wait()
     return HttpResponseRedirect(doc.get_url())

@@ -44,7 +44,8 @@ def _load_docs(topdir):
 	for basename in filenames:
 	    fullpath = os.path.join(dirpath, basename)
 	    dirfile = fullpath[len(topdir):]
-	    if (basename[-1] == '~' or basename[0] == '.'
+	    if (basename[-1] == '~' 
+		or basename[0] == '.' or fullpath.find('/.') >= 0
 	        or basename=='Makefile'):
 		   continue
 	    echo("  %s" % fullpath)

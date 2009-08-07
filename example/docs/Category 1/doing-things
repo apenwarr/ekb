@@ -1,5 +1,5 @@
-title: My doing things doc
-tags: Foo Monkeys, Blah Weasels,
+Title: My doing things doc
+Tags: Category 1, Foo Monkeys, Blah Weasels
 
 This is some text about doing things.
 
@@ -9,3 +9,5 @@ This indented part includes wumpkins from doing-things:
 
 [[include:wumpkins]]
 </ul>
+
+fart?
