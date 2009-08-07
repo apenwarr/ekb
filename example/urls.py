@@ -6,13 +6,18 @@ urlpatterns = patterns('',
     (r'^index$|^index/$|^$', 
      'ekb.views.redirect'),
 
-    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/edit$',
+    # comment out these if you want to disable page editing
+    (r'^kb/(?P<id>\d+)(?P<docname>/[^/]+)/edit$',
      'ekb.views.edit'),
-    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/save$',
+    (r'^kb/(?P<id>\d+)(?P<docname>/[^/]+)/save$',
      'ekb.views.save'),
+
+    # comment out this one if you want to disable pdf rendering via pandoc/latex
     (r'^kb/(?P<id>\d+)(?P<docname>/.+)?\.pdf$',
      'ekb.views.pdf'),
-    (r'^kb/(?P<search>[^/]*)(?P<docname>/.*)?$',
+
+    # you're going to need this one if you want to search/view pages
+    (r'^kb/(?P<search>[^/]*)(?P<docname>/[^/]*)?$',
      'ekb.views.show'),
 
     # WARNING: for testing only, insecure!

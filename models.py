@@ -1,5 +1,6 @@
 from settings import DEBUG
 from django.db import models
+from django.core.urlresolvers import NoReverseMatch
 import re, os, datetime
 
 class Tag(models.Model):
@@ -55,16 +56,28 @@ class Doc(models.Model):
 		 "/" + re.sub(r"\..*$", "", self.filename)])
 		
     @models.permalink
-    def get_pdf_url(self):
+    def _get_pdf_url(self):
 	return ('ekb.views.pdf', 
 		[self.id, 
 		 "/" + re.sub(r"\..*$", "", self.filename)])
+
+    def get_pdf_url(self):
+	try:
+	    return self._get_pdf_url()
+	except NoReverseMatch:
+	    return None
 		
     @models.permalink
-    def get_edit_url(self):
+    def _get_edit_url(self):
 	return ('ekb.views.edit',
 		[self.id, 
 		 "/" + re.sub(r"\..*$", "", self.filename)])
+
+    def get_edit_url(self):
+	try:
+	    return self._get_edit_url()
+	except NoReverseMatch:
+	    return None
 		
     @models.permalink
     def get_url_basic(self):

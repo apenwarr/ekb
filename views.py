@@ -337,7 +337,6 @@ def save(req, id, docname):
     title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
     tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
     text  = req.REQUEST.get('markdown-text', '')
-    print 'text is: {%s}' % text
     if text:
 	f = open('docs/%s' % doc.filename, 'w')
 	f.write(("Title: %s\nTags: %s\n\n%s"
