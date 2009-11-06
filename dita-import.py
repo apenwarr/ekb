@@ -294,6 +294,8 @@ def parse_element(n):
         return Section(n.attrs['navtitle'], _subs(n))
     elif n.name in ['topicref']:
         href = fixname(n.attrs['href'])
+        href = re.sub(r'^.*/', '', href)
+        href = re.sub(r'^.*\\', '', href)
         title = n.attrs['navtitle']
         return Section("[%s][%s]" % (title, href), _subs(n), force=1)
     elif n.name in ['prereq']:
