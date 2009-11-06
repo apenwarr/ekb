@@ -38,7 +38,7 @@ def _load_docs(topdir):
         else:
             titlemap[doc.title] = doc
             
-    print 'loading all from "%s"' % topdir
+    print 'Loading all from "%s"' % topdir
     for (dirpath, dirnames, filenames) in os.walk(topdir):
         assert(dirpath.startswith(topdir))
         for basename in filenames:
@@ -88,7 +88,7 @@ def _load_docs(topdir):
             tag.delete()
 
 def _calc_word_frequencies():
-    print 'deleting all wordweights'
+    print 'Deleting all wordweights'
     Word.objects.all().delete()
     WordWeight.objects.all().delete()
     
@@ -125,7 +125,7 @@ def _calc_word_frequencies():
         word.save()
 
 def _calc_related_matrix():
-    print 'deleting all relatedweights'
+    print 'Deleting all relatedweights'
     RelatedWeight.objects.all().delete()
     
     print 'Reading word weights'
