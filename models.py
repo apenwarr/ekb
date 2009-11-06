@@ -80,6 +80,18 @@ class Doc(models.Model):
             return None
                 
     @models.permalink
+    def _get_upload_url(self):
+        return ('ekb.views.upload',
+                [self.id, 
+                 "/" + re.sub(r"\..*$", "", self.filename)])
+
+    def get_upload_url(self):
+        try:
+            return self._get_upload_url()
+        except NoReverseMatch:
+            return None
+                
+    @models.permalink
     def get_url_basic(self):
         return ('ekb.views.show', [self.id])
 

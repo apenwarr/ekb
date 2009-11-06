@@ -325,6 +325,7 @@ def edit(req, id, docname):
     dict['page'] = page
     dict['title'] = doc.title
     dict['tags'] = join(', ', [t.name for t in doc.tags.all()])
+    dict['uploadurl'] = doc.get_upload_url()
     dict['text'] = doc.text()
 
     return render_to_response('ekb/edit.html', dict)
@@ -350,3 +351,29 @@ def save(req, id, docname):
             p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
             p.wait()
     return HttpResponseRedirect(doc.get_url())
+
+def upload(req, id, docname):
+    p = req.POST
+    for f in req.FILES.values():
+        if f.name.find(".") >= 0:
+            (name, ext) = f.name.rsplit(".", 1)
+            ext = ext.lower()
+        else:
+            name = f.name
+            ext = ''
+        if ext in ['jpg', 'gif', 'png']:
+            nicename = re.sub(r'[^\w]', '-', name)
+            tryname = "%s.%s" % (nicename, ext)
+            i = 0
+            while os.path.exists("static/kbfiles/%s" % tryname):
+                i += 1
+                tryname = "%s-%d.%s" % (nicename, i, ext)
+            outf = open("static/kbfiles/%s" % tryname, "w")
+            for c in f.chunks():
+                outf.write(c)
+            outf.close()
+            return HttpResponse("0 %s" % tryname)
+        else:
+            return HttpResponse(
+                  "1 You can only upload .gif, .png, or .jpg files.")
+    return HttpResponse("Error", status=400)

@@ -14,7 +14,8 @@
 
 {% block main %}
     {% if message %}<p>{{message}}</p>{% endif %}
-
+    
+    <table><tr><td>
     <form action="save" method="POST">
     <h3><label for="title-text">Title:</label>
     <input name="title-text" type="text" value="{{title}}" size=60></h3>
@@ -26,14 +27,35 @@
      >{{text}}</textarea>
     <div align=right><input type="submit" class="button" value="Save Changes"></div>
     </form>
+    
+    </td><td>
+
+    <form METHOD="POST" enctype="multipart/form-data"
+      name="uploadform" id="uploadform"
+      action="{{uploadurl}}" target="uploadframe">
+    <h3>Linked images:</h3>
+    <ul id="uploads" style="margin: 0px">
+    </ul><ul>
+      Add: <input style="" type="file" name="filex"
+      onchange="upload_clicked()" /></li>
+    </ul>
+    </form>
+    <div id="uploadframe_div"></div>
+    
+    </td></tr></table>
 
     <div class="ekb-article">
     <h1>Preview</h1>
     <div class="wmd-preview"></div>
     </div>
 
+    <script type="text/javascript" 
+     src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js">
+    </script>
+
     <script type="text/javascript">
         wmd_options = { output: "Markdown" };
     </script>
     <script type="text/javascript" src="/static/wmd/wmd.js"></script>
+    <script type="text/javascript" src="/static/ekb.js"></script>
 {% endblock %}

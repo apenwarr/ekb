@@ -11,6 +11,8 @@ urlpatterns = patterns('',
      'ekb.views.edit'),
     (r'^kb/(?P<id>\d+)(?P<docname>/[^/]+)/save$',
      'ekb.views.save'),
+    (r'^kb/(?P<id>\d+)(?P<docname>/[^/]+)/upload$',
+     'ekb.views.upload'),
 
     # comment out this one if you want to disable pdf rendering via pandoc/latex
     (r'^kb/(?P<id>\d+)(?P<docname>/.+)?\.pdf$',
