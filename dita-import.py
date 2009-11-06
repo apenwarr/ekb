@@ -364,22 +364,25 @@ def parse_element(n):
 
 
 def process(outdir, filename):
-    print "\n===================="
+    #print "\n===================="
     print 'file: %s' % filename
     
     tree = xml_to_tree(filename)
     global treetop
     treetop = tree
-    print_xmlnode(tree)
-    print "--------------------\n"
+    #print_xmlnode(tree)
+    #print "--------------------\n"
 
     pt = parse_element(tree)
-    pt.dump('')
-    print "--------------------\n"
+    #pt.dump('')
+    #print "--------------------\n"
 
     title = pt.steal_title()
     tags = pt.tags()
     text = pt.render(0).strip()
+    if not text:
+        text = "FIXME: No content yet"
+        print 'Empty content: %s' % filename
     if text:
         text = "\n%s\n" % text
         prefix = ''
@@ -423,7 +426,7 @@ def process(outdir, filename):
             prefix += "tags: %s\n" % (join(", ", tags.keys()))
         fulltext = "%s\n%s\n" % (prefix, text)
         enc = fulltext.encode('utf-8')
-        print enc
+        #print enc
 
         basename = fixname(filename)
         fullfilename = "%s/%s" % (outdir, basename)
