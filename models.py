@@ -143,7 +143,7 @@ class Doc(models.Model):
                     % (pounds, text, len(pounds), ref,
                        skipto and "#"+skipto or ""))
         else:
-            return ("%s [%s][%s]\n\n" % (pounds, text, ref))
+            return ("%s %s\n&nbsp;&nbsp;&nbsp;[Read more...][%s]\n\n" % (pounds, text, ref))
 
     def _process_includes(self, t, depth, expandbooks):
         # handle headers containing references.  We might want to turn them
