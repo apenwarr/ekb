@@ -120,10 +120,13 @@ class Doc(models.Model):
             if not t.name in self._tags:
                 self.tags.remove(t)
         refs = parse_refs(self._text)
+        oldrefs = [r.child for r 
+                   in Reference.objects.filter(parent=self.filename)]
         for rname in refs:
-            (r, created) = Reference.objects.get_or_create(parent=self.filename,
-                                                           child=rname)
-            r.save()
+            if not rname in oldrefs:
+                (r, created) = Reference.objects.get_or_create(
+                                parent=self.filename,child=rname)
+                r.save()
         for r in list(Reference.objects.filter(parent=self.filename)):
             if not r.child in refs:
                 r.delete()
