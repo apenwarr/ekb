@@ -23,6 +23,15 @@
     </ul>
     {% endif %}
 				
+    {% if reference_parents %}
+        <h3>Books Containing This Article</h3>
+	<ul class='sidemenu'>
+	{% for r in reference_parents %}
+	    <li><a href="{{r.get_url}}">{{r.title}}</a></li>
+        {% endfor %}
+	</ul>
+    {% endif %}
+ 
     <h3>Categories</h3>
     <ul class='sidemenu'>
 	{% comment %}

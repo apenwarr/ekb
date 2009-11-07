@@ -246,6 +246,7 @@ def show(req, search = None, docname = None):
                                                      headerdepth=3,
                                                      expandbooks=0),
                                    markdown.markdown)
+        dict['reference_parents'] = list(doc.reference_parents())
         dict['similar'] = doc.similar(max=4)
         dict['dissimilar'] = doc.dissimilar(max=4)
         if tag:

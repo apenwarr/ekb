@@ -32,6 +32,11 @@ def parse_doc(topdir, dirfile):
     mtime = datetime.datetime.fromtimestamp(os.stat(fullpath)[8])
     return (title, tags, mtime, f.read().decode('utf-8'))
 
+def parse_refs(text):
+    # find everything of the form [xyz] or [[xyz]] or [include:xyz] etc.
+    refs = re.findall(r'\[([^\[\]]+)\]', text)
+    return [re.sub(r'^.*:', '', r) for r in refs]
+
 _includes_in_progress = {}
 class Doc(models.Model):
     filename = models.CharField(max_length=200, db_index=True, unique=True)
@@ -41,6 +46,8 @@ class Doc(models.Model):
     tags = models.ManyToManyField(Tag)
     related = models.ManyToManyField('self', through='RelatedWeight',
                                      symmetrical=False)
+    reference_to = models.ManyToManyField('self',
+                                          related_name = 'reference_from')
     words = models.ManyToManyField(Word, through='WordWeight')
 
     @staticmethod
@@ -112,6 +119,14 @@ class Doc(models.Model):
         for t in list(self.tags.all()):
             if not t.name in self._tags:
                 self.tags.remove(t)
+        refs = parse_refs(self._text)
+        for rname in refs:
+            (r, created) = Reference.objects.get_or_create(parent=self.filename,
+                                                           child=rname)
+            r.save()
+        for r in list(Reference.objects.filter(parent=self.filename)):
+            if not r.child in refs:
+                r.delete()
 
     def _try_include(self, indent, filename, isfaq, skipto, expandbooks):
         indent = indent and int(indent) or 0
@@ -217,6 +232,15 @@ class Doc(models.Model):
                                               urlexpander(m.group(2))),
                       text)
         return text
+
+    def reference_parents(self):
+        l = []
+        for r in Reference.objects.filter(child=self.filename):
+            try:
+                l.append(Doc.objects.get(filename=r.parent))
+            except Doc.DoesNotExist:
+                pass
+        return l
                 
     def similar(self, max=4, minweight=0.05):
         return (self.related_to
@@ -239,3 +263,7 @@ class RelatedWeight(models.Model):
     parent = models.ForeignKey(Doc, related_name = 'related_to')
     doc = models.ForeignKey(Doc, related_name = 'related_from')
     weight = models.FloatField()
+
+class Reference(models.Model):
+    parent = models.CharField(max_length=200, db_index=True)
+    child = models.CharField(max_length=200, db_index=True)
