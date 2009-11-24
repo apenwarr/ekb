@@ -351,6 +351,8 @@ def save(req, id, docname):
         p.wait()
         p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
         p.wait()
+    doc.use_latest()
+    doc.save()
     return HttpResponseRedirect(doc.get_url())
 
 def upload(req, id, docname):
