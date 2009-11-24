@@ -6,7 +6,7 @@ from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from os.path import dirname
 import os, re, datetime, markdown
-from ekb.models import Doc, Tag, Word
+from ekb.models import Doc, Tag, Word, autosummarize
 from PIL import Image
 from handy import atoi, join, nicedate, pluralize, mkdirp, unlink
 
@@ -39,58 +39,6 @@ def _try_get(queryset, **kwargs):
     for i in queryset.filter(**kwargs):
         return i
     return None
-
-def _fixheader(s, lastc):
-    if lastc.isalnum():
-        return s+lastc+':'
-    else:
-        return s+lastc
-
-def _autosummary(text, want_words, highlighter, width = 120):
-    # sort words from least to most common; the blurb should show the most
-    # interesting word if possible
-    sortwords = [w.name for w in 
-                 Word.objects.filter(name__in = want_words).order_by('total')]
-
-    # get rid of some markdown cruft
-    text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
-                  lambda m: _fixheader(m.group(1), m.group(2)),
-                  text)
-    text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
-    text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
-    text = re.sub(r'[*`]', '', text)
-    text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', re.M), ' ', text)
-    text = " %s " % text
-    
-    match = matchend = -1
-    for w in sortwords:
-        match = text.lower().find(w.lower())
-        if match >= 0:
-            matchend = match + len(w)
-            break
-    if match < 0:
-        match = 0
-
-    start = max(text[:match].rfind(".") + 1,
-                text[:match].rfind("!") + 1)
-    if matchend-start >= width:
-        start = matchend-width/2
-
-    while start < len(text) and not text[start].isspace():
-        start += 1
-    end = start + width
-    if end >= len(text):
-        text = text[start:]
-        hi = ''
-    else:
-        while end >= 0 and not text[end].isalnum():
-            end -= 1
-        while end < len(text) and text[end].isalnum():
-            end += 1
-        text = text[start:end]
-        hi = "<b>...</b>"
-
-    return highlighter.highlight(text, html.escape) + hi
 
 def redirect(req):
     return HttpResponseRedirect('/kb/')
@@ -295,10 +243,10 @@ def show(req, search = None):
 
         dict['docs'] = []
         for d in f:
-            d.autosummary = _autosummary(d.expanded_text(urlexpander,
+            d.autosummary = autosummarize(d.expanded_text(urlexpander,
                                                          headerdepth=1,
                                                          expandbooks=1),
-                                         want_words, h)
+                                         want_words, h.highlight)
             dict['docs'].append(d)
                 
         return render_to_response('ekb/search.html', dict)

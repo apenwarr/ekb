@@ -1,6 +1,7 @@
 from settings import DEBUG
 from django.db import models
 from django.core.urlresolvers import NoReverseMatch
+from django.utils import html
 import re, os, datetime
 
 class Tag(models.Model):
@@ -38,6 +39,61 @@ def parse_refs(text):
     # find everything of the form [xyz] or [[xyz]] or [include:xyz] etc.
     refs = re.findall(r'\[([^\[\]]+)\]', text)
     return [re.sub(r'^.*:', '', r) for r in refs]
+
+def _fixheader(s, lastc):
+    if lastc.isalnum():
+        return s + lastc + ':'
+    else:
+        return s + lastc
+
+def autosummarize(text, want_words = [], highlighter = None, width = 120):
+    # sort words from least to most common; the blurb should show the most
+    # interesting word if possible
+    sortwords = [w.name for w in 
+                 Word.objects.filter(name__in = want_words).order_by('total')]
+
+    # get rid of some markdown cruft
+    text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
+                  lambda m: _fixheader(m.group(1), m.group(2)),
+                  text)
+    text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
+    text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
+    text = re.sub(r'[*`]', '', text)
+    text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', re.M), ' ', text)
+    text = " %s " % text
+    
+    match = matchend = -1
+    for w in sortwords:
+        match = text.lower().find(w.lower())
+        if match >= 0:
+            matchend = match + len(w)
+            break
+    if match < 0:
+        match = 0
+
+    start = max(text[:match].rfind(".") + 1,
+                text[:match].rfind("!") + 1)
+    if matchend-start >= width:
+        start = matchend-width/2
+
+    while start < len(text) and not text[start].isspace():
+        start += 1
+    end = start + width
+    if end >= len(text):
+        text = text[start:]
+        hi = ''
+    else:
+        while end >= 0 and not text[end].isalnum():
+            end -= 1
+        while end < len(text) and text[end].isalnum():
+            end += 1
+        text = text[start:end]
+        hi = "<b>...</b>"
+
+    if highlighter:
+        return highlighter(text, html.escape) + hi
+    else:
+        return text + hi
 
 _includes_in_progress = {}
 class Doc(models.Model):
