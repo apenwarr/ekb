@@ -352,8 +352,12 @@ def save(req, id, docname):
         p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
         p.wait()
     doc.use_latest()
-    doc.save()
-    return HttpResponseRedirect(doc.get_url())
+    redir_url = doc.get_url()  # this function is uncallable after delete()
+    if not doc.text():
+        doc.delete()
+    else:
+        doc.save()
+    return HttpResponseRedirect(redir_url)
 
 def upload(req, id, docname):
     p = req.POST
