@@ -191,7 +191,7 @@ def pdf(req, id, docname):
         #os.unlink(ltname)
         return HttpResponse(pd, "application/pdf")
 
-def show(req, search = None, docname = None):
+def show(req, search = None):
     urlexpander = lambda url: _html_url(req, url)
     qsearch = req.REQUEST.get('q', '')
     if not search:
