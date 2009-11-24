@@ -16,6 +16,8 @@ def atoi(s):
 
 
 def nicedate(d1):
+    if not d1:
+        return 'never'
     d2 = datetime.datetime.now()
     diff = d2 - d1
     days = diff.days

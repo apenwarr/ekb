@@ -340,6 +340,7 @@ def save(req, id, docname):
     tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
     text  = req.REQUEST.get('markdown-text', '')
     if text:
+        mkdirp(os.path.dirname('docs/%s' % doc.pathname))
         f = open('docs/%s' % doc.pathname, 'w')
         f.write(("Title: %s\nTags: %s\n\n%s"
                  % (title, tags, text)).replace('\r', '').encode('utf-8'))

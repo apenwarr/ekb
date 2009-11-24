@@ -14,7 +14,9 @@ def parse_doc(topdir, dirfile):
     fullpath = topdir + dirfile
     tags = os.path.dirname(dirfile).split("/")
     title = os.path.basename(dirfile)
-            
+
+    if not os.path.exists(fullpath):
+        return (title, filter(None, tags), None, '(Deleted)')
     f = open(fullpath)
     line = f.readline()
     while line and line.strip():
