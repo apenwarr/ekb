@@ -286,7 +286,7 @@ def save(req, id, docname):
         raise Http404("Document #%d (%s) does not exist." % (docid, id))
     title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
     tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
-    text  = req.REQUEST.get('markdown-text', '')
+    text  = req.REQUEST.get('markdown-text', '').strip()
     mkdirp(os.path.dirname('docs/%s' % doc.pathname))
     f = open('docs/%s' % doc.pathname, 'w')
     f.write(("Title: %s\nTags: %s\n\n%s"
