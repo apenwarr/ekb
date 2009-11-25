@@ -227,8 +227,8 @@ class Doc(models.Model):
                                         width=200)
             else:
                 summary = ''
-            return ("%s %s\n%s [(Read more)][%s]\n\n"
-                    % (pounds, text, summary, ref))
+            return ("%s [%s][%s]\n%s [(Read more)][%s]\n\n"
+                    % (pounds, text, ref, summary, ref))
 
     def _process_includes(self, t, depth, expandbooks):
         # handle headers containing references.  We might want to turn them
