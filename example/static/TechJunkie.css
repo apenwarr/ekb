@@ -7,6 +7,10 @@ body {
     text-align: center;	
 }
 
+textarea {
+    font: 12px 'Andale Mono', 'Courier New', 'Courier', monospace, mono, serif;
+}
+
 /* links */
 a, a:visited {	
     color: #306495;
