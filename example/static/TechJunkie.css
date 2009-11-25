@@ -12,8 +12,13 @@ textarea {
 }
 
 /* links */
-a, a:visited {	
-    color: #306495;
+a {	
+    color: #0C4E80;
+    background: inherit;
+    text-decoration: none;
+}
+a:visited {
+    color: #0C4E80;
     background: inherit;
     text-decoration: none;
 }
