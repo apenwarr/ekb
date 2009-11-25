@@ -42,32 +42,38 @@ h4 {
     font-weight: normal;
     padding-bottom: 5px;
     padding-top: 5px;
+    padding-left: 1em;
 }
 h5 {
     font-size: 1.1em;
     font-weight: normal;
     padding-bottom: 5px;
+    padding-left: 2em;
 }
 h6 {
     font-size: 1.0em;
     font-weight: normal;
     padding-bottom: 5px;
+    padding-left: 3em;
 }
 h7 {
     font-size: 0.9em;
     font-weight: normal;
     padding-bottom: 5px;
+    padding-left: 4em;
 }
 h8 {
     font-size: 0.8em;
     font-weight: normal;
     padding-bottom: 5px;
+    padding-left: 5em;
 }
 h9 {
     font-size: 0.75em;
     font-weight: normal;
     padding-bottom: 5px;
     color: #88ac0b;
+    padding-left: 6em;
 }
 
 /* Paragraph */
