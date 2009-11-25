@@ -154,7 +154,7 @@ def show(req, search = None):
 
     doc = _try_get(Doc.objects, id=atoi(search))
     if doc: search = qsearch  # the old search was really a docid
-    tag = _try_get(Tag.objects, name__iexact=search)
+    tag = search and _try_get(Tag.objects, name__iexact=search)
 
     if search:
         dict['urlappend'] = '?q=%s' % search
