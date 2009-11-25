@@ -246,7 +246,7 @@ def show(req, search = None):
             d.autosummary = autosummarize(d.expanded_text(urlexpander,
                                                          headerdepth=1,
                                                          expandbooks=1),
-                                         want_words, h.highlight)
+                                          want_words, h.highlight)
             dict['docs'].append(d)
                 
         return render_to_response('ekb/search.html', dict)

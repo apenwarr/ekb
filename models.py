@@ -56,6 +56,7 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
     text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
                   lambda m: _fixheader(m.group(1), m.group(2)),
                   text)
+    text = re.sub(r'\!\[(.*?)\]\s*\(.*?\)', r'', text)
     text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
     text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
     text = re.sub(r'[*`]', '', text)
@@ -90,6 +91,8 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
         text = text[start:end]
         hi = "<b>...</b>"
 
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
     if highlighter:
         return highlighter(text, html.escape) + hi
     else:
@@ -216,7 +219,16 @@ class Doc(models.Model):
                     % (pounds, text, len(pounds), ref,
                        skipto and "#"+skipto or ""))
         else:
-            return ("%s %s\n&nbsp;&nbsp;&nbsp;[Read more...][%s]\n\n" % (pounds, text, ref))
+            d = Doc.try_get(filename=str(ref))
+            if d:
+                summary = autosummarize(d.expanded_text(lambda x: x,
+                                                        headerdepth=1,
+                                                        expandbooks=1),
+                                        width=200)
+            else:
+                summary = ''
+            return ("%s %s\n%s [(Read more)][%s]\n\n"
+                    % (pounds, text, summary, ref))
 
     def _process_includes(self, t, depth, expandbooks):
         # handle headers containing references.  We might want to turn them
