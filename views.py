@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponse, Http404, \
         HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.utils import html
+from django.db import IntegrityError
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from os.path import dirname
@@ -279,14 +280,7 @@ def edit(req, id, docname):
 
     return render_to_response('ekb/edit.html', dict)
 
-def save(req, id, docname):
-    docid = atoi(id)
-    doc = _try_get(Doc.objects, id=docid)
-    if not doc:
-        raise Http404("Document #%d (%s) does not exist." % (docid, id))
-    title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
-    tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
-    text  = req.REQUEST.get('markdown-text', '').strip()
+def _try_save(doc, title, tags, text):
     mkdirp(os.path.dirname('docs/%s' % doc.pathname))
     f = open('docs/%s' % doc.pathname, 'w')
     f.write(("Title: %s\nTags: %s\n\n%s"
@@ -300,12 +294,41 @@ def save(req, id, docname):
         p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
         p.wait()
     doc.use_latest()
+    doc.title = title
+    doc.save()
+
+def save(req, id, docname):
+    if not req.POST:
+	return HttpResponse('Error: you must use POST to save pages.',
+			    status=500)
+    docid = atoi(id)
+    doc = _try_get(Doc.objects, id=docid)
+    if not doc:
+        raise Http404("Document #%d (%s) does not exist." % (docid, id))
+    title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
+    tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
+    text  = req.REQUEST.get('markdown-text', '').strip()
     redir_url = doc.get_url()  # this function is uncallable after delete()
-    if not doc.text():
+    if not text:
         doc.delete()
     else:
-        doc.save()
-    return HttpResponseRedirect(redir_url)
+	xtitle = title
+	di = 0
+	while 1:
+	    if di > 1:
+		xtitle = '%s [dup#%d]' % (title, di)
+	    elif di == 1:
+		xtitle = '%s [dup]' % title
+	    try:
+		_try_save(doc, xtitle, tags, text)
+	    except IntegrityError:
+		if di < 16:
+		    di += 1
+		    continue
+		else:
+		    raise
+	    break
+	return HttpResponseRedirect(redir_url)
 
 def upload(req, id, docname):
     p = req.POST
