@@ -279,6 +279,17 @@ def edit(req, id, docname):
     dict['text'] = doc.text()
 
     return render_to_response('ekb/edit.html', dict)
+    
+def _try_delete(doc):
+    unlink('./%s' % doc.pathname)
+    if os.path.isdir('docs/.git'):
+        pn = './%s' % doc.pathname
+        msg = 'kb: removed "%s" via web' % doc.filename
+        p = Popen(args = ['git', 'rm', '--', pn], cwd = 'docs')
+        p.wait()
+        p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
+        p.wait()
+    doc.delete()
 
 def _try_save(doc, title, tags, text):
     mkdirp(os.path.dirname('docs/%s' % doc.pathname))
@@ -289,7 +300,7 @@ def _try_save(doc, title, tags, text):
     if os.path.isdir('docs/.git'):
         pn = './%s' % doc.pathname
         msg = 'kb: updated "%s" via web' % doc.filename
-        p = Popen(args = ['git', 'add', pn], cwd = 'docs')
+        p = Popen(args = ['git', 'add', '--', pn], cwd = 'docs')
         p.wait()
         p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
         p.wait()
@@ -310,7 +321,7 @@ def save(req, id, docname):
     text  = req.REQUEST.get('markdown-text', '').strip()
     redir_url = doc.get_url()  # this function is uncallable after delete()
     if not text:
-        doc.delete()
+        _try_delete(doc)
     else:
 	xtitle = title
 	di = 0
@@ -328,7 +339,7 @@ def save(req, id, docname):
 		else:
 		    raise
 	    break
-	return HttpResponseRedirect(redir_url)
+    return HttpResponseRedirect(redir_url)
 
 def upload(req, id, docname):
     p = req.POST
