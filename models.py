@@ -53,14 +53,17 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
                  Word.objects.filter(name__in = want_words).order_by('total')]
 
     # get rid of some markdown cruft
-    text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),
+    text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),  # headings
                   lambda m: _fixheader(m.group(1), m.group(2)),
                   text)
-    text = re.sub(r'\!\[(.*?)\]\s*\(.*?\)', r'', text)
-    text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)
-    text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)
+    text = re.sub(r'\!\[(.*?)\]\s*\(.*?\)', r'', text)  # ![alt](url)
+    text = re.sub(r'\[(.*?)\]\s*\[.*?\]', r'\1', text)  # [alt][url]
+    text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)  # [alt](url)
     text = re.sub(r'[*`]', '', text)
-    text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', re.M), ' ', text)
+    text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', # bullets
+			     re.M), ' ', text)
+    text = re.sub(re.compile(r'<(\S+)[^>]+>.*</\1>',
+			     re.S + re.I), '', text) # html tags
     text = " %s " % text
     
     match = matchend = -1
