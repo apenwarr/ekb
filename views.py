@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from os.path import dirname
-import os, re, datetime, markdown
+import os, re, datetime, markdown, urllib
 from ekb.models import Doc, Tag, Word, autosummarize
 from PIL import Image
 from handy import atoi, join, nicedate, pluralize, mkdirp, unlink
@@ -179,7 +179,7 @@ def show(req, search = None):
         doc.use_latest()
         pagebase = doc.get_url()
         page = pagebase + dict.get('urlappend', '')
-        if req.path != pagebase:
+        if req.path != pagebase and req.path != urllib.unquote(pagebase):
             return HttpResponsePermanentRedirect(page)
         dict['page'] = page
         if not tag and not search and len(doc.tags.all()) > 0:
