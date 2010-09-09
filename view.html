@@ -10,7 +10,7 @@
     {% if tags %}
         | Filed under
 	{% for tag in tags %}
-            <a href="/kb/{{tag.name}}">{{tag.name}}</a
+            <a href="/kb/{{tag}}">{{tag}}</a
 	    >{% if not forloop.last %},{% endif %}
 	{% endfor %}
 	|&nbsp;<a rel="nofollow" href="{{pdfurl}}">PDF</a>

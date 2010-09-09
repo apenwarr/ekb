@@ -1,4 +1,4 @@
-import datetime, os
+import time, os
 
 def join(between, list):
     if list != None:
@@ -18,14 +18,14 @@ def atoi(s):
 def nicedate(d1):
     if not d1:
         return 'never'
-    d2 = datetime.datetime.now()
+    d2 = time.time()
     diff = d2 - d1
-    days = diff.days
-    secs = diff.seconds
-    if secs < 0 or days < 0:
+    days = int(diff/24/60/60)
+    secs = int(diff - days*24*60*60)
+    if diff < 0:
         return 'in the future'
     elif days >= 14:
-        return d1.strftime('%Y-%m-%d')
+        return time.strftime('%Y-%m-%d', time.localtime(d1))
     elif days >= 1:
         return '%s day%s ago' % (days, pluralize(days))
     elif secs >= 60*60:

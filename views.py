@@ -7,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 from os.path import dirname
 import os, re, datetime, markdown, urllib
-from ekb.models import Doc, Tag, Word, autosummarize
+from ekb.models import Doc, db, autosummarize
 from PIL import Image
 from handy import atoi, join, nicedate, pluralize, mkdirp, unlink
 
@@ -98,7 +98,7 @@ def _pdf_url(req, name):
 def pdf(req, id, docname):
     urlexpander = lambda url: _pdf_url(req, url)
     docid = atoi(id)
-    doc = _try_get(Doc.objects, id=docid)
+    doc = Doc.try_get(id=docid)
     if not doc:
         raise Http404("Document #%d (%s) does not exist." % (docid, id))
     else:
@@ -140,6 +140,27 @@ def pdf(req, id, docname):
         #os.unlink(ltname)
         return HttpResponse(pd, "application/pdf")
 
+
+def _alltags():
+    return db.select('select tag,count(tag) '
+                     '  from Tags '
+                     '  group by tag '
+                     '  order by tag ')
+
+
+def _tagdocs(search):
+    tag = None
+    docs = []
+    for t,d in db.run('select tag,docid from Tags where tag=?', search):
+        tag = t
+        docs.append(d)
+    return tag,docs
+
+
+def _marks(l):
+    return ','.join(['?'] * len(l))
+
+
 def show(req, search = None):
     urlexpander = lambda url: _html_url(req, url)
     qsearch = req.REQUEST.get('q', '')
@@ -147,15 +168,16 @@ def show(req, search = None):
         search = qsearch
 
     dict = {}
-    dict['alltags'] = Tag.objects.order_by('name')
-    dict['alldocs'] = Doc.objects
+    dict['alltags'] = _alltags()
+    dict['alldocs'] = Doc
     dict['menuitems'] = [
         ('/kb/', 'Knowledgebase'),
     ]
 
-    doc = _try_get(Doc.objects, id=atoi(search))
+    doc = Doc.try_get(id=atoi(search))
     if doc: search = qsearch  # the old search was really a docid
-    tag = search and _try_get(Tag.objects, name__iexact=search)
+    tag,tagdocs = _tagdocs(search)
+    print 'tds: %r %r %r' % (search, tag, tagdocs)
 
     if search:
         dict['urlappend'] = '?q=%s' % search
@@ -163,7 +185,7 @@ def show(req, search = None):
 
     if search:
         if tag:
-            dict['menuitems'].append(('/kb/%s' % search, tag.name))
+            dict['menuitems'].append(('/kb/%s' % search, tag))
         else:
             dict['menuitems'].append(('/kb/%s' % search, '"%s"' % search))
 
@@ -182,13 +204,13 @@ def show(req, search = None):
         if req.path != pagebase and req.path != urllib.unquote(pagebase):
             return HttpResponsePermanentRedirect(page)
         dict['page'] = page
-        if not tag and not search and len(doc.tags.all()) > 0:
-            t = doc.tags.all()[0]
-            dict['menuitems'].append(('/kb/%s' % t.name, t.name))
+        if not tag and not search and doc.tags:
+            t = doc.tags[0]
+            dict['menuitems'].append(('/kb/%s' % t, t))
         dict['menuitems'].append((page, 'KB%d' % doc.id))
         dict['title'] = doc.title
-        dict['when'] = nicedate(doc.last_modified)
-        dict['tags'] = doc.tags.all()
+        dict['when'] = nicedate(doc.mtime)
+        dict['tags'] = doc.tags
         dict['editurl'] = doc.get_edit_url()
         dict['pdfurl'] = doc.get_pdf_url()
         dict['text'] = h.highlight(doc.expanded_text(urlexpander,
@@ -208,42 +230,43 @@ def show(req, search = None):
 
         if tag:
             # the search term is actually the name of a tag
-            f = tag.doc_set.order_by('title')
+            f = tagdocs
             dict['skip_tags'] = 1
-            dict['title'] = 'Category: %s' % tag.name
+            dict['title'] = 'Category: %s' % tag
             dict['search'] = ''
         elif search:
             # the search term is just a search term
             dict['title'] = 'Search: "%s"' % search
-            docs = Doc.objects.all()
-            docweights = {}
             words = []
-            for word in want_words:
-                w = _try_get(Word.objects, name=word)
-                if not w:
-                    # word isn't in any doc, so empty search results
-                    docs = []
+            docids = list(db.selectcol('select docid from WordWeights '
+                                       '  where word=?', want_words[0]))
+            for word in want_words[1:]:
+                if not docids:
+                    # no remaining matches
                     break
-                words.append(w)
-                docs = docs & w.doc_set.all()
-            for doc in docs:
-                weight = 1.0
-                for word in words:
-                    # we know every word is in every remaining doc
-                    weight *= doc.wordweight_set.get(word=w).weight
-                docweights[doc] = weight
+                docids = list(db.selectcol('select docid from WordWeights '
+                                           '  where word=? and docid in (%s)'
+                                           % _marks(docids),
+                                           word, *docids))
+            l = want_words + docids
+            docweights = db.select('select avg(weight)*count(weight), docid '
+                                   '  from WordWeights '
+                                   '  where word in (%s) and docid in (%s) '
+                                   '  group by docid '
+                                   % (_marks(want_words), _marks(docids)),
+                                   *l)
             f = []
-            for doc,weight in sorted(docweights.items(),
-                                     lambda x,y: cmp(y[1],x[1])):
+            for weight,docid in sorted(docweights):
                 if weight > 0.0:
-                    f.append(doc)
+                    f.append(docid)
         else:
             # there is no search term; toplevel index
             dict['title'] = 'Knowledgebase'
             return render_to_response('ekb/kb.html', dict)
 
         dict['docs'] = []
-        for d in f:
+        for docid in f:
+            d = Doc(docid)
             d.autosummary = autosummarize(d.expanded_text(urlexpander,
                                                          headerdepth=1,
                                                          expandbooks=1),
@@ -252,9 +275,10 @@ def show(req, search = None):
                 
         return render_to_response('ekb/search.html', dict)
 
+
 def edit(req, id, docname):
     docid = atoi(id)
-    doc = _try_get(Doc.objects, id=docid)
+    doc = Doc.try_get(id=docid)
     if not doc:
         raise Http404("Document #%d (%s) does not exist." % (docid, id))
 
@@ -262,23 +286,24 @@ def edit(req, id, docname):
     page = doc.get_edit_url()
         
     dict = {}
-    dict['alltags'] = Tag.objects.order_by('name')
-    dict['alldocs'] = Doc.objects
+    dict['alltags'] = _alltags()
+    dict['alldocs'] = Doc
     dict['menuitems'] = [
         ('/kb/', 'Knowledgebase'),
     ]
-    if len(doc.tags.all()) > 0:
-        t = doc.tags.all()[0]
-        dict['menuitems'].append(('/kb/%s' % t.name, t.name))
+    if len(doc.tags) > 0:
+        t = doc.tags[0]
+        dict['menuitems'].append(('/kb/%s' % t, t))
     dict['menuitems'].append((doc.get_url(), 'KB%d' % doc.id))
     dict['menuitems'].append((doc.get_edit_url(), '-Edit-'))
     dict['page'] = page
     dict['title'] = doc.title
-    dict['tags'] = join(', ', [t.name for t in doc.tags.all()])
+    dict['tags'] = join(', ', doc.tags)
     dict['uploadurl'] = doc.get_upload_url()
-    dict['text'] = doc.text()
+    dict['text'] = doc.text
 
     return render_to_response('ekb/edit.html', dict)
+
     
 def _try_delete(doc):
     unlink('./%s' % doc.pathname)
@@ -290,6 +315,7 @@ def _try_delete(doc):
         p = Popen(args = ['git', 'commit', '-m', msg], cwd = 'docs')
         p.wait()
     doc.delete()
+
 
 def _try_save(doc, title, tags, text):
     mkdirp(os.path.dirname('docs/%s' % doc.pathname))
@@ -307,13 +333,15 @@ def _try_save(doc, title, tags, text):
     doc.use_latest()
     doc.title = title
     doc.save()
+    db.commit()
+
 
 def save(req, id, docname):
     if not req.POST:
-	return HttpResponse('Error: you must use POST to save pages.',
-			    status=500)
+        return HttpResponse('Error: you must use POST to save pages.',
+                            status=500)
     docid = atoi(id)
-    doc = _try_get(Doc.objects, id=docid)
+    doc = Doc.try_get(id=docid)
     if not doc:
         raise Http404("Document #%d (%s) does not exist." % (docid, id))
     title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
@@ -323,23 +351,24 @@ def save(req, id, docname):
     if not text:
         _try_delete(doc)
     else:
-	xtitle = title
-	di = 0
-	while 1:
-	    if di > 1:
-		xtitle = '%s [dup#%d]' % (title, di)
-	    elif di == 1:
-		xtitle = '%s [dup]' % title
-	    try:
-		_try_save(doc, xtitle, tags, text)
-	    except IntegrityError:
-		if di < 16:
-		    di += 1
-		    continue
-		else:
-		    raise
-	    break
+        xtitle = title
+        di = 0
+        while 1:
+            if di > 1:
+                xtitle = '%s [dup#%d]' % (title, di)
+            elif di == 1:
+                xtitle = '%s [dup]' % title
+            try:
+                _try_save(doc, xtitle, tags, text)
+            except IntegrityError:
+                if di < 16:
+                    di += 1
+                    continue
+                else:
+                    raise
+            break
     return HttpResponseRedirect(redir_url)
+
 
 def upload(req, id, docname):
     p = req.POST

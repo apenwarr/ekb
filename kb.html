@@ -36,12 +36,12 @@
     <ul class='sidemenu'>
 	{% comment %}
 	<li><a href="/kb/">-All-
-	    <br><span>{{alldocs.count}} 
+	    <br><span>{{alldocs.count}}
 	      article{{alldocs.count|pluralize}}</span></a></li>
 	{% endcomment %}
-        {% for tag in alltags.all %}
-	    {% if tag.doc_set.count %}
-            <li><a href="/kb/{{tag.name}}">{{tag.name}} ({{tag.doc_set.count}})
+        {% for tag,count in alltags %}
+	    {% if count %}
+            <li><a href="/kb/{{tag}}">{{tag}} ({{count}})
 	      </a></li>
 	    {% endif %}
 	{% endfor %}

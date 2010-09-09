@@ -1,15 +1,47 @@
+import re, os, datetime, sqlite3
 from settings import DEBUG
 from django.db import models
 from django.core.urlresolvers import NoReverseMatch
 from django.utils import html
-import re, os, datetime
+import sss
+from helpers import *
 
-class Tag(models.Model):
-    name = models.CharField(max_length=200, db_index=True, unique=True)
+def _create_v1(db):
+    db.run('create table Docs '
+           '    (id primary key, filename, pathname, title, mtime)')
+    
+    db.run('create table Refs '
+           '    (from_doc, to_doc)')
+    db.run('create unique index Refs_pk on Refs (from_doc, to_doc)')
+    
+    db.run('create table Tags '
+           '    (docid, tag)')
+    db.run('create unique index Tags_pk on Tags (docid, tag)')
+    db.run('create index Tags_tag on Tags (tag)')
+    
+    db.run('create table RelatedDocs '
+           '    (from_doc, to_doc, weight)')
+    db.run('create unique index RelatedDocs_pk on RelatedDocs '
+           '    (from_doc, to_doc)')
+    
+    db.run('create table Words '
+           '    (word, total)')
+    db.run('create unique index Words_pk on Words (word)')
 
-class Word(models.Model):
-    name = models.CharField(max_length=40, db_index=True, unique=True)
-    total = models.IntegerField()
+    db.run('create table WordWeights '
+           '    (docid, word, weight)')
+    db.run('create unique index WordWeights_pk on WordWeights '
+           '    (docid, word)')
+    
+_schema = [(1, _create_v1)]
+
+
+class EkbDb(sss.Db):
+    def __init__(self):
+        sss.Db.__init__(self, 'ekb.db', _schema)
+
+db = EkbDb()
+
 
 def parse_doc(topdir, dirfile):
     fullpath = topdir + dirfile
@@ -32,13 +64,15 @@ def parse_doc(topdir, dirfile):
             raise KeyError('Unknown header: "%s"' % k)
         line = f.readline()
     tags = filter(None, tags)
-    mtime = datetime.datetime.fromtimestamp(os.stat(fullpath)[8])
-    return (title, tags, mtime, f.read().decode('utf-8'))
+    mtime = os.stat(fullpath).st_mtime
+    return (title, list(set(tags)), mtime, f.read().decode('utf-8'))
+
 
 def parse_refs(text):
     # find everything of the form [xyz] or [[xyz]] or [include:xyz] etc.
     refs = re.findall(r'\[([^\[\]]+)\]', text)
     return [re.sub(r'^.*:', '', r) for r in refs]
+
 
 def _fixheader(s, lastc):
     if lastc.isalnum():
@@ -46,11 +80,14 @@ def _fixheader(s, lastc):
     else:
         return s + lastc
 
+
 def autosummarize(text, want_words = [], highlighter = None, width = 120):
     # sort words from least to most common; the blurb should show the most
     # interesting word if possible
-    sortwords = [w.name for w in 
-                 Word.objects.filter(name__in = want_words).order_by('total')]
+    sortwords = list(db.selectcol('select word from Words where word in (%s) '
+                                  '  order by total desc' 
+                                  % (','.join(['?']*len(want_words))),
+                                  *want_words))
 
     # get rid of some markdown cruft
     text = re.sub(re.compile('^#+(.*)(\S)\s*$', re.M),  # headings
@@ -61,9 +98,9 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
     text = re.sub(r'\[(.*?)\]\s*\(.*?\)', r'\1', text)  # [alt](url)
     text = re.sub(r'[*`]', '', text)
     text = re.sub(re.compile(r'^(\s*- |\s*\d+\. |\s*>+ )', # bullets
-			     re.M), ' ', text)
+                             re.M), ' ', text)
     text = re.sub(re.compile(r'<(\S+)[^>]+>.*</\1>',
-			     re.S + re.I), '', text) # html tags
+                             re.S + re.I), '', text) # html tags
     text = " %s " % text
     
     match = matchend = -1
@@ -101,24 +138,53 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
     else:
         return text + hi
 
+
 _includes_in_progress = {}
-class Doc(models.Model):
-    filename = models.CharField(max_length=200, db_index=True, unique=True)
-    pathname = models.CharField(max_length=400, db_index=False, unique=True)
-    title = models.CharField(max_length=200, db_index=True, unique=True)
-    last_modified = models.DateTimeField()
-    tags = models.ManyToManyField(Tag)
-    related = models.ManyToManyField('self', through='RelatedWeight',
-                                     symmetrical=False)
-    reference_to = models.ManyToManyField('self',
-                                          related_name = 'reference_from')
-    words = models.ManyToManyField(Word, through='WordWeight')
+class Doc(object):
+    def __init__(self, id):
+        self.id = id
+        (self.filename, self.pathname, self.title, self.mtime) = db.selectrow(
+            'select filename, pathname, title, mtime '
+            '  from Docs where id=?', id)
+        self._text = None  # don't read by default
+        self.tags = list(db.selectcol('select tag from Tags where docid=?', id))
+        self.related = list(db.run('select weight,to_doc from RelatedDocs '
+                                   '  where from_doc=?', id))
+        self.references_to = list(db.selectcol('select to_doc from Refs '
+                                               '  where from_doc=?', id))
+
+    def save(self):
+        db.run('insert or replace into Docs '
+               '  (id, filename, pathname, title, mtime) '
+               '  values (?,?,?,?,?)', self.id, self.filename, self.pathname,
+               self.title, self.mtime)
+        db.run('delete from Tags where docid=?', self.id)
+        for t in self.tags:
+            db.run('insert into Tags (docid, tag) values (?,?)',
+                   self.id, t)
+        db.run('delete from Refs where from_doc=?', self.id)
+        for r in self.references_to:
+            db.run('insert into Refs (from_doc, to_doc) '
+                   '  values (?,?)', self.id, r)
+
+    def delete(self):
+        db.run('delete from Docs where id=?', self.id)
+
+    @staticmethod
+    def search(**kwargs):
+        where = '1=1'
+        args = []
+        for k,v in kwargs.items():
+            where += ' and %s=?' % k
+            args.append(v)
+        for i in db.selectcol('select id from Docs where %s' % where, *args):
+            yield Doc(i)
 
     @staticmethod
     def try_get(**kwargs):
-        for i in Doc.objects.filter(**kwargs):
-            return i
-        return None
+        for i in Doc.search(**kwargs):
+            return i  # return the first match
+        return None # no match
 
     @models.permalink
     def get_url(self):
@@ -166,34 +232,20 @@ class Doc(models.Model):
     def get_url_basic(self):
         return ('ekb.views.show', [self.id])
 
-    _title = None
-    _tags = None
-    _text = None
     def read_latest(self):
-        (self._title, self._tags, self.last_modified, self._text) \
+        (self.title, self.tags, self.last_modified, self._text) \
                 = parse_doc('docs', self.pathname)
 
     def use_latest(self):
+        oldtags = self.tags
         if not self._text:
             self.read_latest()
-        self.title = self._title
-        for tname in self._tags:
-            (t, created) = Tag.objects.get_or_create(name=tname)
-            self.tags.add(t)
-        for t in list(self.tags.all()):
-            if not t.name in self._tags:
-                self.tags.remove(t)
-        refs = parse_refs(self._text)
-        oldrefs = [r.child for r 
-                   in Reference.objects.filter(parent=self.filename)]
-        for rname in refs:
-            if not rname in oldrefs:
-                (r, created) = Reference.objects.get_or_create(
-                                parent=self.filename,child=rname)
-                r.save()
-        for r in list(Reference.objects.filter(parent=self.filename)):
-            if not r.child in refs:
-                r.delete()
+        refs_names = parse_refs(self._text)
+        self.references_to = []
+        for name in set(refs_names):
+            id = db.selectcell('select id from Docs where filename=?', name)
+            if id:
+                self.references_to.append(id)
 
     def _try_include(self, indent, filename, isfaq, skipto, expandbooks):
         indent = indent and int(indent) or 0
@@ -204,7 +256,7 @@ class Doc(models.Model):
             return '[[missing-include:%s]]' % filename
         else:
             _includes_in_progress[filename] = 1
-            t = self._process_includes(d.text(), depth=indent+1,
+            t = self._process_includes(d.text, depth=indent+1,
                                        expandbooks=expandbooks)
             if isfaq:
                 parts = re.split(re.compile(r'^#+.*$', re.M), t, 2)
@@ -273,13 +325,14 @@ class Doc(models.Model):
         minheader = min([99] + [len(h) for h in allheaders])
         return re.sub(re.compile(r'^' + '#'*minheader, re.M), '#'*depth, t)
 
+    @property
     def text(self):
         if not self._text:
             self.read_latest()
         return self._text
 
     def expanded_text(self, urlexpander, headerdepth, expandbooks):
-        text = self._process_includes(self.text(), depth=headerdepth,
+        text = self._process_includes(self.text, depth=headerdepth,
                                       expandbooks=expandbooks)
 
         # find all markdown 'refs' that refer to kb pages.
@@ -311,35 +364,29 @@ class Doc(models.Model):
 
     def reference_parents(self):
         l = []
-        for r in Reference.objects.filter(child=self.filename):
+        for r in db.selectcol('select from_doc from Refs '
+                              '  where to_doc=?', self.id):
             try:
-                l.append(Doc.objects.get(filename=r.parent))
+                l.append(Doc(r))
             except Doc.DoesNotExist:
                 pass
         return l
                 
     def similar(self, max=4, minweight=0.05):
-        return (self.related_to
-                    .order_by('-weight')
-                    .filter(weight__gt=minweight)
-                    [:max])
+        l = []
+        for weight,id in db.run('select weight,to_doc from RelatedDocs '
+                                '  where from_doc=? and weight > ? '
+                                '  order by weight desc'
+                                '  limit ?', self.id, minweight, max):
+            l.append(dict(weight=weight, doc=Doc(id)))
+        return l
         
     def dissimilar(self, max=4):
-        return (self.related_to
-                    .order_by('weight')
-                    .filter(weight__gt=0.001)
-                    [:max])
+        l = []
+        for weight,id in db.run('select weight,to_doc from RelatedDocs '
+                                '  where from_doc=? and weight > 0.001 '
+                                '  order by weight asc'
+                                '  limit ?', self.id, max):
+            l.append(dict(weight=weight, doc=Doc(id)))
+        return l
 
-class WordWeight(models.Model):
-    word = models.ForeignKey(Word)
-    doc = models.ForeignKey(Doc)
-    weight = models.FloatField()
-
-class RelatedWeight(models.Model):
-    parent = models.ForeignKey(Doc, related_name = 'related_to')
-    doc = models.ForeignKey(Doc, related_name = 'related_from')
-    weight = models.FloatField()
-
-class Reference(models.Model):
-    parent = models.CharField(max_length=200, db_index=True)
-    child = models.CharField(max_length=200, db_index=True)

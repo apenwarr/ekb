@@ -1,11 +1,12 @@
 import sys, os, re
 from django.db import transaction
-from ekb.models import parse_doc, Doc, Tag, Word, WordWeight, RelatedWeight
+from ekb.models import parse_doc, Doc, db
 from handy import join
 
 def echo(s):
     sys.stdout.write(s)
     sys.stdout.flush()
+
 
 def _load_docs(topdir):
     seen = {}
@@ -31,7 +32,7 @@ def _load_docs(topdir):
     idfile = open(idfilename, "a")
     
     titlemap = {}
-    for doc in Doc.objects.all():
+    for doc in Doc.search():
         if not os.path.exists(topdir + doc.pathname):
             print 'Deleting old document: %s' % doc.filename
             doc.delete()
@@ -70,74 +71,68 @@ def _load_docs(topdir):
                 print ('WARNING: Duplicate title:\n  "%s"\n  "%s"'
                        % (basename, titlemap[title].filename))
                 title += " [duplicate]"
-                
-            d = Doc(id = id,
-                    filename = basename,
-                    pathname = dirfile,
-                    title = title,
-                    last_modified = mtime)
-            titlemap[title] = d
-            d.save()
+
+            db.run('insert or replace into Docs '
+                   '  (id, filename, pathname, title, mtime) '
+                   '  values (?,?,?,?,?)',
+                   id, basename, dirfile, title, mtime)
+            titlemap[title] = d = Doc(id)
             d.use_latest()
             d.title = title
             d.save()
 
-    for tag in Tag.objects.all():
-        if not tag.doc_set.count():
-            print 'Deleting old tag: %s' % tag.name
-            tag.delete()
 
 def _calc_word_frequencies():
     print 'Deleting all wordweights'
-    Word.objects.all().delete()
-    WordWeight.objects.all().delete()
+    db.run('delete from WordWeights')
+    db.run('delete from Words')
     
-    globwords = {}
-    for doc in Doc.objects.iterator():
+    totals = {}
+    for doc in Doc.search():
         print ' %s' % doc.filename
         textbits = [doc.title, doc.title,  # title gets bonus points
                     doc.filename, doc.expanded_text(lambda x: x, headerdepth=1,
                                                     expandbooks=1)]
-        textbits += [t.name for t in doc.tags.all()]
+        textbits += doc.tags
         fulltext = join(' ', textbits)
-        words = [w.lower() for w in re.findall(r"(\w+(?:[.'#%@]\w+)?)", fulltext)]
+        words = [w.lower() for w in re.findall(r"(\w+(?:[.'#%@]\w+)?)",
+                                               fulltext)]
         total = len(words)*1.0
-        d = {}
+        wordcounts = {}
         echo('   %d total words' % total)
         for w in words:
-            d[w] = d.get(w, 0) + 1
-        echo(', %d unique' % len(d.keys()))
+            wordcounts[w] = wordcounts.get(w, 0) + 1
+        echo(', %d unique' % len(wordcounts.keys()))
         new = 0
-        for w in d:
-            count = d[w]
-            word = globwords.get(w)
-            if not word:
-                word = Word.objects.create(name=w, total=0)
-                globwords[w] = word
+        for w,count in wordcounts.iteritems():
+            if not w in totals:
+                totals[w] = 0
                 new += 1
-            word.total += count
-            ww = WordWeight.objects.create(word=word, doc=doc,
-                                           weight=(count/total)**.5)
+            totals[w] += count
+            db.run('insert into WordWeights (docid, word, weight) '
+                   '  values (?,?,?)', doc.id, w, (count/total)**.5)
         echo(', %d new\n' % new)
-    print ' %d total unique words' % len(globwords)
+    print ' %d total unique words' % len(totals)
     print 'Saving words'
-    for word in globwords.values():
-        word.save()
+    for word,count in totals.iteritems():
+        db.run('insert into Words (word, total) values (?,?)', word, count)
+
 
 def _calc_related_matrix():
     print 'Deleting all relatedweights'
-    RelatedWeight.objects.all().delete()
+    db.run('delete from RelatedDocs')
     
     print 'Reading word weights'
-    docs = list(Doc.objects.all())
+    docs = list(Doc.search())
     docwords = {}
     for doc in docs:
         echo('.')
         l = docwords[doc] = {}
-        for ww in doc.wordweight_set.iterator():
-            l[ww.word.name] = ww.weight
+        for word,weight in db.run('select word,weight from WordWeights '
+                                  '  where docid=?', doc.id):
+            l[word] = weight
     print
-
+    
     print 'Calculating related documents'
     correlations = {}
     for doc in docs:
@@ -145,30 +140,28 @@ def _calc_related_matrix():
         l = correlations[doc] = {}
         for doc2 in docs:
             if doc2==doc: continue
-            bits = [docwords[doc2].get(word,0)*weight
-                      for word,weight in docwords[doc].iteritems()]
+            bits = (docwords[doc2].get(word,0)*weight
+                      for word,weight in docwords[doc].iteritems())
             l[doc2] = sum(bits)
     print
-
+    
     print 'Saving correlations'
     for doc in correlations:
         #print '%s:' % doc.filename
-        for doc2,weight in sorted(correlations[doc].items(),
-                           lambda x,y: cmp(y[1], x[1])):
-            RelatedWeight.objects.create(parent=doc, doc=doc2, weight=weight)
+        for doc2,weight in correlations[doc].items():
+            db.run('insert or replace into RelatedDocs '
+                   '  (from_doc, to_doc, weight) '
+                   '  values (?,?,?)', doc.id, doc2.id, weight)
             #print '  %s: %f' % (doc2.filename, weight)
 
+
 def load_docs(topdir):
-    transaction.enter_transaction_management()
-    transaction.managed()
     _load_docs(topdir)
     print 'Committing'
-    transaction.commit()
+    db.commit()
 
 def index_docs(topdir):
-    transaction.enter_transaction_management()
-    transaction.managed()
     _calc_word_frequencies()
     _calc_related_matrix()
     print 'Committing'
-    transaction.commit()
+    db.commit()
