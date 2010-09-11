@@ -276,6 +276,30 @@ def show(req, search = None):
         return render_to_response('ekb/search.html', dict)
 
 
+def new(req, docname):
+    doc = Doc.try_get(filename=docname)
+    if doc:
+        raise Http404("Document #%d (%s) already exists." % (doc.id, docname))
+        del doc
+
+    page = Doc.get_new_url(docname)
+        
+    dict = {}
+    dict['alltags'] = _alltags()
+    dict['alldocs'] = Doc
+    dict['menuitems'] = [
+        ('/kb/', 'Knowledgebase'),
+    ]
+    dict['menuitems'].append((Doc.get_new_url(docname), docname))
+    dict['page'] = page
+    dict['title'] = ''
+    dict['tags'] = ''
+    dict['uploadurl'] = Doc.get_upload_url()
+    dict['text'] = ''
+
+    return render_to_response('ekb/edit.html', dict)
+
+
 def edit(req, id, docname):
     docid = atoi(id)
     doc = Doc.try_get(id=docid)
@@ -340,13 +364,20 @@ def save(req, id, docname):
     if not req.POST:
         return HttpResponse('Error: you must use POST to save pages.',
                             status=500)
-    docid = atoi(id)
-    doc = Doc.try_get(id=docid)
-    if not doc:
-        raise Http404("Document #%d (%s) does not exist." % (docid, id))
+    while docname.startswith('/'):
+        docname = docname[1:]
     title = req.REQUEST.get('title-text', 'Untitled').replace('\n', ' ')
     tags  = req.REQUEST.get('tags-text', '').replace('\n', ' ')
     text  = req.REQUEST.get('markdown-text', '').strip()
+
+    docid = atoi(id)
+    if docid:
+        doc = Doc.try_get(id=docid)
+    else:
+        doc = Doc.create(docname, docname, title)
+                         
+    if not doc:
+        raise Http404("Document #%d (%s) does not exist." % (docid, id))
     redir_url = doc.get_url()  # this function is uncallable after delete()
     if not text:
         _try_delete(doc)
@@ -369,8 +400,13 @@ def save(req, id, docname):
             break
     return HttpResponseRedirect(redir_url)
 
+def upload(req):
+    try:
+        return _upload(req)
+    except Exception, e:
+        print str(e)
 
-def upload(req, id, docname):
+def _upload(req):
     p = req.POST
     for f in req.FILES.values():
         if f.name.find(".") >= 0:
@@ -383,6 +419,7 @@ def upload(req, id, docname):
             nicename = re.sub(r'[^\w]', '-', name)
             tryname = "%s.%s" % (nicename, ext)
             i = 0
+            mkdirp('static/kbfiles')
             while os.path.exists("static/kbfiles/%s" % tryname):
                 i += 1
                 tryname = "%s-%d.%s" % (nicename, i, ext)

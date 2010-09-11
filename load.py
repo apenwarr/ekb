@@ -1,6 +1,6 @@
 import sys, os, re
 from django.db import transaction
-from ekb.models import parse_doc, Doc, db
+from ekb.models import parse_doc, Doc, db, DOCDIR
 from handy import join
 
 def echo(s):
@@ -8,43 +8,23 @@ def echo(s):
     sys.stdout.flush()
 
 
-def _load_docs(topdir):
+def _load_docs():
     seen = {}
-    id_seen = {}
-    name_to_id = {}
-    nextid = 1001
-
-    # The .idmap file lets us maintain consistency between kb article numbers
-    # between loads.  You might not want to check it into version control,
-    # since it'll probably cause merge conflicts.  Only the public-facing
-    # production server needs to maintain the numbers consistently.
-    # (So that google can index things properly.)
-    idfilename = "%s/.idmap" % topdir
-    if os.path.exists(idfilename):
-        for line in open(idfilename):
-            (id, name) = line.strip().split(" ", 1)
-            id = int(id)
-            if id in id_seen:
-                raise KeyError("More than one .idmap entry for #%d" % id)
-            id_seen[id] = name
-            name_to_id[name] = id
-            nextid = max(id+1, nextid)
-    idfile = open(idfilename, "a")
     
     titlemap = {}
     for doc in Doc.search():
-        if not os.path.exists(topdir + doc.pathname):
-            print 'Deleting old document: %s' % doc.filename
+        if not os.path.exists(os.path.join(DOCDIR, doc.pathname)):
+            print 'Deleting old document: %r %r' % (DOCDIR, doc.pathname)
             doc.delete()
         else:
             titlemap[doc.title] = doc
             
-    print 'Loading all from "%s"' % topdir
-    for (dirpath, dirnames, filenames) in os.walk(topdir):
-        assert(dirpath.startswith(topdir))
+    print 'Loading all from "%s"' % DOCDIR
+    for (dirpath, dirnames, filenames) in os.walk(DOCDIR):
+        assert(dirpath.startswith(DOCDIR))
         for basename in filenames:
             fullpath = os.path.join(dirpath, basename)
-            dirfile = fullpath[len(topdir):]
+            dirfile = fullpath[len(DOCDIR):]
             if (basename[-1] == '~' 
                 or basename[0] == '.' or fullpath.find('/.') >= 0
                 or basename=='Makefile'):
@@ -57,27 +37,17 @@ def _load_docs(topdir):
                 
             title = basename
 
-            (title, tags, mtime, text) = parse_doc(topdir, dirfile)
-
+            (title, tags, mtime, text) = parse_doc(dirfile)
             print " (tags=%s)" % repr(tags)
-
-            id = name_to_id.get(basename)
-            if not id:
-                id = nextid
-                idfile.write("%d %s\n" % (id, basename))
-            nextid = max(id+1, nextid)
 
             while title in titlemap and titlemap[title].filename != basename:
                 print ('WARNING: Duplicate title:\n  "%s"\n  "%s"'
                        % (basename, titlemap[title].filename))
                 title += " [duplicate]"
 
-            db.run('insert or replace into Docs '
-                   '  (id, filename, pathname, title, mtime) '
-                   '  values (?,?,?,?,?)',
-                   id, basename, dirfile, title, mtime)
-            titlemap[title] = d = Doc(id)
-            d.use_latest()
+            d = Doc.create(basename, dirfile, title)
+            titlemap[title] = d
+            d.use_latest()  # FIXME: lame: this parses a second time
             d.title = title
             d.save()
 
@@ -155,12 +125,12 @@ def _calc_related_matrix():
             #print '  %s: %f' % (doc2.filename, weight)
 
 
-def load_docs(topdir):
-    _load_docs(topdir)
+def load_docs():
+    _load_docs()
     print 'Committing'
     db.commit()
 
-def index_docs(topdir):
+def index_docs():
     _calc_word_frequencies()
     _calc_related_matrix()
     print 'Committing'

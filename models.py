@@ -6,6 +6,8 @@ from django.utils import html
 import sss
 from helpers import *
 
+DOCDIR='docs'
+
 def _create_v1(db):
     db.run('create table Docs '
            '    (id primary key, filename, pathname, title, mtime)')
@@ -43,8 +45,8 @@ class EkbDb(sss.Db):
 db = EkbDb()
 
 
-def parse_doc(topdir, dirfile):
-    fullpath = topdir + dirfile
+def parse_doc(dirfile):
+    fullpath = os.path.join(DOCDIR, dirfile)
     tags = os.path.dirname(dirfile).split("/")
     title = os.path.basename(dirfile)
 
@@ -139,6 +141,10 @@ def autosummarize(text, want_words = [], highlighter = None, width = 120):
         return text + hi
 
 
+_idmap = None
+_idmap_f = None
+
+
 _includes_in_progress = {}
 class Doc(object):
     def __init__(self, id):
@@ -146,12 +152,57 @@ class Doc(object):
         (self.filename, self.pathname, self.title, self.mtime) = db.selectrow(
             'select filename, pathname, title, mtime '
             '  from Docs where id=?', id)
+        while self.pathname.startswith('/'):
+            self.pathname = self.pathname[1:]
         self._text = None  # don't read by default
         self.tags = list(db.selectcol('select tag from Tags where docid=?', id))
         self.related = list(db.run('select weight,to_doc from RelatedDocs '
                                    '  where from_doc=?', id))
         self.references_to = list(db.selectcol('select to_doc from Refs '
                                                '  where from_doc=?', id))
+
+
+    @staticmethod
+    def _nextid():
+        global _idmap
+        idm = _idmap or {}
+        lastid = max(1000, max(idm.values()))
+        return lastid+1
+        
+    @staticmethod
+    def create(basename, dirfile, title):
+        global _idmap, _idmap_f
+        if _idmap is None:
+            # The .idmap file lets us maintain consistency between kb
+            # article numbers between loads.  You might not want to check
+            # it into version control, since it'll probably cause merge
+            # conflicts.  Only the public-facing production server needs
+            # to maintain the numbers consistently.
+            # (So that google can index things properly and permalinks work.)
+            _idmap = {}
+            id_seen = {}
+            idfilename = os.path.join(DOCDIR, '.idmap')
+            if os.path.exists(idfilename):
+                for line in open(idfilename):
+                    (id, name) = line.strip().split(" ", 1)
+                    id = int(id)
+                    if id in id_seen:
+                        raise KeyError("More than one .idmap entry for #%d"
+                                       % id)
+                    id_seen[id] = name
+                    _idmap[name] = id
+        id = _idmap.get(basename)
+        if not id:
+            id = Doc._nextid()
+            if not _idmap_f:
+                _idmap_f = open(idfilename, 'a')
+            _idmap_f.write("%d %s\n" % (id, basename))
+            _idmap_f.flush()
+        db.run('insert or replace into Docs '
+               '  (id, filename, pathname, title) '
+               '  values (?,?,?,?)',
+               id, basename, dirfile, title)
+        return Doc(id)
 
     def save(self):
         db.run('insert or replace into Docs '
@@ -186,6 +237,12 @@ class Doc(object):
             return i  # return the first match
         return None # no match
 
+    @staticmethod
+    @models.permalink
+    def get_new_url(filename):
+        return ('ekb.views.new', 
+                [re.sub(r"\..*$", "", filename)])
+
     @models.permalink
     def get_url(self):
         return ('ekb.views.show', 
@@ -215,16 +272,16 @@ class Doc(object):
             return self._get_edit_url()
         except NoReverseMatch:
             return None
-                
-    @models.permalink
-    def _get_upload_url(self):
-        return ('ekb.views.upload',
-                [self.id, 
-                 "/" + re.sub(r"\..*$", "", self.filename)])
 
-    def get_upload_url(self):
+    @staticmethod
+    @models.permalink
+    def _get_upload_url():
+        return ('ekb.views.upload', [])
+
+    @staticmethod
+    def get_upload_url():
         try:
-            return self._get_upload_url()
+            return Doc._get_upload_url()
         except NoReverseMatch:
             return None
                 
@@ -233,8 +290,8 @@ class Doc(object):
         return ('ekb.views.show', [self.id])
 
     def read_latest(self):
-        (self.title, self.tags, self.last_modified, self._text) \
-                = parse_doc('docs', self.pathname)
+        (self.title, self.tags, self.mtime, self._text) \
+                = parse_doc(self.pathname)
 
     def use_latest(self):
         oldtags = self.tags
@@ -341,11 +398,13 @@ class Doc(object):
         # And we need to add a line like:
         #   [refname]: /the/path
         # to the bottom in order to make the ref resolvable.
-        refs = re.findall(r'\[[^]]*\]\s*\[([^]]*)\]', text)
+        refs = re.findall(r'\[[^]]*\]\s*\[([^]/:]*)\]', text)
         for ref in refs:
             d = Doc.try_get(filename=ref)
             if d:
                 text += "\n[%s]: %s\n" % (ref, d.get_url())
+            else:
+                text += "\n[%s]: %s" % (ref, Doc.get_new_url(ref))
 
         # expand all non-full URLs, in case the text will be pasted onto another
         # page (or into a pdf).

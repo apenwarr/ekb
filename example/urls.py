@@ -9,9 +9,11 @@ urlpatterns = patterns('',
     # comment out these if you want to disable page editing
     (r'^kb/(?P<id>\d+)(?P<docname>/.+)/edit$',
      'ekb.views.edit'),
-    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/save$',
+    (r'^kb/0/(?P<docname>[-_A-Za-z0-9 ]+)/new$',
+     'ekb.views.new'),
+    (r'^kb/(?P<id>\d+)(?P<docname>/[-_A-Za-z0-9 ]+)/save$',
      'ekb.views.save'),
-    (r'^kb/(?P<id>\d+)(?P<docname>/.+)/upload$',
+    (r'^kb/upload$',
      'ekb.views.upload'),
 
     # comment out this one if you want to disable pdf rendering via pandoc/latex

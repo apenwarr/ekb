@@ -27,6 +27,12 @@ a:hover {
     background: inherit;
     text-decoration: underline;
 }
+a[href$='/new'] {
+    color: #ff0000;
+}
+a[href$='/new']:after {
+    content: ' (NOT YET WRITTEN)';
+}
 
 /* headers */
 h1, h2, h3, h4, h5, h6, h7, h8, h9 {
