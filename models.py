@@ -46,6 +46,8 @@ db = EkbDb()
 
 
 def parse_doc(dirfile):
+    while dirfile.startswith('/'):
+        dirfile = dirfile[1:]
     fullpath = os.path.join(DOCDIR, dirfile)
     tags = os.path.dirname(dirfile).split("/")
     title = os.path.basename(dirfile)
