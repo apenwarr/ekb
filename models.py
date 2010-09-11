@@ -222,6 +222,8 @@ class Doc(object):
 
     def delete(self):
         db.run('delete from Docs where id=?', self.id)
+        db.run('delete from Tags where docid=?', self.id)
+        db.run('delete from Refs where from_doc=?', self.id)
 
     @staticmethod
     def search(**kwargs):
