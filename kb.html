@@ -31,6 +31,15 @@
         {% endfor %}
 	</ul>
     {% endif %}
+    
+    {% if similar %}
+        <h3>Related Articles</h3>
+	<ul class='sidemenu'>
+	{% for a in similar %}
+	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a></li>
+	{% endfor %}
+	</ul>
+    {% endif %}
  
     <h3>Categories</h3>
     <ul class='sidemenu'>
@@ -46,15 +55,6 @@
 	    {% endif %}
 	{% endfor %}
     </ul>
-    
-    {% if similar %}
-        <h3>Related Articles</h3>
-	<ul class='sidemenu'>
-	{% for a in similar %}
-	<li><a href="{{a.doc.get_url}}">{{a.doc.title}}</a></li>
-	{% endfor %}
-	</ul>
-    {% endif %}
 {% endblock %}
 
 {% block main %}
