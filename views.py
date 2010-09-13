@@ -336,7 +336,7 @@ def edit(req, id, docname):
 
     
 def _try_delete(doc):
-    unlink('./%s' % doc.pathname)
+    unlink('docs/%s' % doc.pathname)
     if os.path.isdir('docs/.git'):
         pn = './%s' % doc.pathname
         msg = 'kb: removed "%s" via web' % doc.filename

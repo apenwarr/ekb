@@ -5,6 +5,7 @@ from django.core.urlresolvers import NoReverseMatch
 from django.utils import html
 import sss
 from helpers import *
+from handy import *
 
 DOCDIR='docs'
 
@@ -225,6 +226,7 @@ class Doc(object):
         db.run('delete from Docs where id=?', self.id)
         db.run('delete from Tags where docid=?', self.id)
         db.run('delete from Refs where from_doc=?', self.id)
+        unlink('%s/%s' % (DOCDIR, self.pathname))
 
     @staticmethod
     def search(**kwargs):
