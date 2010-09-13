@@ -68,3 +68,9 @@ function upload_done()
 	$('#uploadform')[0].reset();
     }
 }
+
+
+function tag_new_links()
+{
+    $("a[href$='/new']").addClass("new").append(" (NOT YET WRITTEN)");
+}
