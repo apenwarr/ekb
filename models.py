@@ -168,12 +168,13 @@ class Doc(object):
     def _nextid():
         global _idmap
         idm = _idmap or {}
-        lastid = max(1000, max(idm.values()))
+        lastid = max([1000] + idm.values())
         return lastid+1
         
     @staticmethod
     def create(basename, dirfile, title):
         global _idmap, _idmap_f
+        idfilename = os.path.join(DOCDIR, '.idmap')
         if _idmap is None:
             # The .idmap file lets us maintain consistency between kb
             # article numbers between loads.  You might not want to check
@@ -183,7 +184,6 @@ class Doc(object):
             # (So that google can index things properly and permalinks work.)
             _idmap = {}
             id_seen = {}
-            idfilename = os.path.join(DOCDIR, '.idmap')
             if os.path.exists(idfilename):
                 for line in open(idfilename):
                     (id, name) = line.strip().split(" ", 1)
@@ -198,6 +198,7 @@ class Doc(object):
             id = Doc._nextid()
             if not _idmap_f:
                 _idmap_f = open(idfilename, 'a')
+            _idmap[basename] = id
             _idmap_f.write("%d %s\n" % (id, basename))
             _idmap_f.flush()
         db.run('insert or replace into Docs '
