@@ -151,7 +151,13 @@ def _alltags():
 def _tagdocs(search):
     tag = None
     docs = []
-    for t,d in db.run('select tag,docid from Tags where tag=?', search):
+    q = db.run('select Tags.tag,Tags.docid '
+               '  from Tags '
+               '  join Docs on Docs.id = Tags.docid '
+               '  where tag=?'
+               '  order by Docs.title ',
+               search)
+    for t,d in q:
         tag = t
         docs.append(d)
     return tag,docs
