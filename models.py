@@ -246,9 +246,16 @@ class Doc(object):
 
     @staticmethod
     @models.permalink
-    def get_new_url(filename):
+    def _get_new_url(filename):
         return ('ekb.views.new', 
                 [re.sub(r"\..*$", "", filename)])
+
+    @staticmethod
+    def get_new_url(filename):
+        try:
+            return Doc._get_new_url(filename)
+        except NoReverseMatch:
+            return None
 
     @models.permalink
     def get_url(self):
@@ -411,7 +418,9 @@ class Doc(object):
             if d:
                 text += "\n[%s]: %s\n" % (ref, d.get_url())
             else:
-                text += "\n[%s]: %s" % (ref, Doc.get_new_url(ref))
+                url = Doc.get_new_url(ref)
+                if url:
+                    text += "\n[%s]: %s" % (ref, url)
 
         # expand all non-full URLs, in case the text will be pasted onto another
         # page (or into a pdf).
